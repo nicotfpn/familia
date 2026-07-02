@@ -63,7 +63,7 @@ body{
   padding-bottom:env(safe-area-inset-bottom,0);
 }
 
-/* ===== TOPBAR ===== */
+
 .topbar{
   position:sticky;
   top:0;
@@ -93,7 +93,7 @@ body{
   color:var(--ink-muted);
 }
 
-/* ===== TOOLBAR ===== */
+
 .toolbar{
   padding:8px 12px;
   display:flex;
@@ -148,6 +148,7 @@ body{
   background:transparent;
   outline:none;
   padding:0;
+  appearance:textfield;
   -moz-appearance:textfield;
 }
 .qtd-group .qtd-input::-webkit-inner-spin-button,
@@ -169,7 +170,7 @@ body{
 }
 .add-btn:active{background:#093170;}
 
-/* ===== ACTIONS BAR ===== */
+
 .actions-bar{
   display:flex;
   align-items:center;
@@ -238,7 +239,7 @@ body{
 }
 #feedback-copy.show{opacity:1;}
 
-/* ===== SPREADSHEET ===== */
+
 .sheet{
   flex:1;
   overflow-x:auto;
@@ -295,7 +296,6 @@ th.sorted .sort-arrow{opacity:1;}
 .col-check{width:42px;text-align:center !important;}
 .col-qtd{width:60px;text-align:center !important;}
 .col-acao{width:38px;text-align:center !important;}
-.col-item{}
 
 .item-text{
   font-size:0.88rem;
@@ -319,6 +319,38 @@ th.sorted .sort-arrow{opacity:1;}
   color:var(--ink);
 }
 .item.feito .qtd-val{color:var(--ink-soft);}
+
+.qtd-inline{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:1px;
+}
+.qtd-inline button{
+  width:20px;height:20px;
+  border:1px solid var(--border-light);
+  border-radius:2px;
+  background:var(--surface);
+  color:var(--accent);
+  font-size:0.7rem;
+  font-weight:600;
+  cursor:pointer;
+  display:none;
+  align-items:center;
+  justify-content:center;
+  padding:0;
+  font-family:var(--font);
+  line-height:1;
+}
+.qtd-inline button:active{background:var(--accent-light);}
+.qtd-inline .qtd-val{
+  min-width:20px;
+  text-align:center;
+  font-family:var(--font-mono);
+  font-size:0.82rem;
+  color:var(--ink);
+}
+.item.feito .qtd-inline .qtd-val{color:var(--ink-soft);}
 
 .cb-excel{
   width:18px;height:18px;
@@ -363,7 +395,7 @@ th.sorted .sort-arrow{opacity:1;}
 }
 .del-cell:hover{background:var(--red-light);color:var(--red);}
 
-/* ===== SECTION ===== */
+
 .section-head td{
   background:var(--accent-light) !important;
   border-bottom:1px solid var(--accent-mid) !important;
@@ -424,7 +456,7 @@ th.sorted .sort-arrow{opacity:1;}
 }
 .sheet-table tbody tr{animation:rowIn 0.2s ease-out;}
 
-/* ===== RESPONSIVE ===== */
+
 @media (max-width:500px){
   .col-qtd{width:48px;}
   .col-check{width:36px;}
@@ -465,44 +497,47 @@ th.sorted .sort-arrow{opacity:1;}
   .item-text{font-size:1rem;}
   .sheet-table th{font-size:0.75rem;padding:12px 16px;}
   .sheet-table td{padding:14px 16px;}
-  .col-qtd{width:80px;}
+  .col-qtd{width:100px;}
   .col-check{width:48px;}
   .col-acao{width:44px;}
   body{font-size:15px;}
+  .qtd-inline button{display:inline-flex;}
 }
 
-/* ===== PRINT ===== */
+
 @media print{
-  body{background:#fff;font-size:12pt;}
-  .topbar,.toolbar,.actions-bar,.banner,.del-cell,.cb-excel,.clear-row,.section-head{display:none !important;}
-  .page{max-width:100%;padding:0;min-height:auto;}
+  body{background:#fff;font-size:9pt;color:#000;}
+  *,*::before,*::after{print-color-adjust:exact !important;-webkit-print-color-adjust:exact !important;}
+  .topbar,.toolbar,.actions-bar,.banner,.del-cell,.cb-excel,.clear-row,.section-head,.empty-state{display:none !important;}
+  .page{max-width:100%;padding:0;min-height:auto;margin:0;}
   .sheet{overflow:visible;}
-  .sheet-table{page-break-after:auto;}
+  .sheet-table{page-break-after:auto;border-collapse:collapse;}
   .sheet-table th{
-    background:#f0f0f0 !important;
-    -webkit-print-color-adjust:exact;
-    print-color-adjust:exact;
-    position:static;
-    border-bottom:2px solid #000;
-    color:#000;
-    font-size:8pt;
+    background:#fff !important;
+    color:#000 !important;
+    font-size:6.5pt;
+    font-weight:600;
+    border-bottom:1px solid #000;
+    padding:2px 4px;
+    text-transform:uppercase;
+    letter-spacing:0.03em;
   }
   .sheet-table td{
-    border-bottom:1px solid #ccc;
+    border:none;
+    border-bottom:1px dotted #bbb;
     background:#fff !important;
-    padding:6px 8px;
-    font-size:10pt;
+    padding:2px 4px;
+    font-size:8pt;
+    color:#000;
   }
   .sheet-table tr:hover td{background:#fff !important;}
-  .item.feito .item-text{
-    color:#999 !important;
-  }
-  .item-text{font-size:10pt;}
-  .qtd-val{font-size:9pt;}
-  .col-check{width:30px;}
-  .col-acao{width:20px;}
-  .col-qtd{width:50px;}
-  .empty-state{display:none;}
+  .item.feito .item-text{color:#999 !important;text-decoration:line-through;text-decoration-color:#999;text-decoration-thickness:1px;}
+  .item-text{font-size:8pt;font-weight:400;}
+  .qtd-val{font-size:7pt;}
+  .col-check{width:0;overflow:hidden;padding:0 !important;border:none !important;}
+  .col-acao{width:0;overflow:hidden;padding:0 !important;border:none !important;}
+  .col-qtd{width:28px;text-align:center;}
+  .col-item{padding-left:2px !important;}
   .sheet-table tbody tr{animation:none !important;}
 }
 
@@ -559,18 +594,17 @@ let pendente = false;
 let sortBy = 'criadoEm';
 let sortDir = 'asc';
 
-const $ = (id) => document.getElementById(id);
-const sheet = $('sheet');
-const contador = $('contador');
-const statusDot = $('status-dot');
-const statusTexto = $('status-texto');
-const banner = $('banner');
-const feedbackCopy = $('feedback-copy');
+const sheet = document.getElementById('sheet');
+const contador = document.getElementById('contador');
+const statusDot = document.getElementById('status-dot');
+const statusTexto = document.getElementById('status-texto');
+const banner = document.getElementById('banner');
+const feedbackCopy = document.getElementById('feedback-copy');
 
 function escapeHtml(str){
-  const d = document.createElement('div');
-  d.textContent = str;
-  return d.innerHTML;
+  return str.replace(/[&<>"']/g, function(c){
+    return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#39;"}[c];
+  });
 }
 
 function mostrarBanner(msg){
@@ -594,14 +628,6 @@ function carregarCache(){
     const raw = localStorage.getItem(CACHE_KEY);
     if (raw) { itens = JSON.parse(raw); render(); }
   } catch(e) {}
-}
-
-function comparar(a, b){
-  let diff;
-  if (sortBy === 'texto') diff = a.texto.localeCompare(b.texto, 'pt-BR');
-  else if (sortBy === 'qtd') diff = a.qtd - b.qtd;
-  else diff = a.criadoEm - b.criadoEm;
-  return sortDir === 'asc' ? diff : -diff;
 }
 
 function setSort(campo){
@@ -717,8 +743,12 @@ function render(){
       const id = tr.dataset.id;
       tr.querySelector('.cb-excel').addEventListener('click', () => toggle(id));
       tr.querySelector('.del-cell').addEventListener('click', () => remover(id));
+      const qtdMenos = tr.querySelector('.qtd-menos');
+      const qtdMais = tr.querySelector('.qtd-mais');
+      if (qtdMenos) qtdMenos.addEventListener('click', () => mudarQtd(id, -1));
+      if (qtdMais) qtdMais.addEventListener('click', () => mudarQtd(id, 1));
     });
-    const limpar = $('btn-limpar');
+    const limpar = document.getElementById('btn-limpar');
     if (limpar) limpar.addEventListener('click', limparComprados);
   }
 }
@@ -731,7 +761,13 @@ function itemHtml(item){
       </div>
     </td>
     <td class="col-item"><span class="item-text">${escapeHtml(item.texto)}</span></td>
-    <td class="col-qtd"><span class="qtd-val">${item.qtd}</span></td>
+    <td class="col-qtd">
+      <span class="qtd-inline">
+        <button class="qtd-menos" aria-label="Diminuir">−</button>
+        <span class="qtd-val">${item.qtd}</span>
+        <button class="qtd-mais" aria-label="Aumentar">+</button>
+      </span>
+    </td>
     <td class="col-acao"><button class="del-cell" aria-label="Remover">✕</button></td>
   </tr>`;
 }
@@ -759,10 +795,20 @@ function limparComprados(){
   sync();
 }
 
+function mudarQtd(id, delta){
+  const item = itens.find(i => i.id === id);
+  if (!item) return;
+  item.qtd = Math.max(1, Math.min(99, item.qtd + delta));
+  render();
+  salvarCache();
+  sync();
+}
+
 function adicionar(texto, qtd){
+  const t = texto.trim();
   itens.push({
     id: Date.now().toString(36) + Math.random().toString(36).slice(2, 7),
-    texto: texto.trim(),
+    texto: t.charAt(0).toUpperCase() + t.slice(1),
     qtd,
     feito: false,
     criadoEm: Date.now()
@@ -817,31 +863,31 @@ async function buscarRemoto(inicial){
   } catch(e){}
 }
 
-// ---- eventos ----
+
 function atualizarQtdInput(){
-  $('qtd-valor').value = qtdAtual;
+  document.getElementById('qtd-valor').value = qtdAtual;
 }
-$('qtd-menos').addEventListener('click', () => {
+document.getElementById('qtd-menos').addEventListener('click', () => {
   qtdAtual = Math.max(1, qtdAtual - 1);
   atualizarQtdInput();
 });
-$('qtd-mais').addEventListener('click', () => {
+document.getElementById('qtd-mais').addEventListener('click', () => {
   qtdAtual = Math.min(99, qtdAtual + 1);
   atualizarQtdInput();
 });
-$('qtd-valor').addEventListener('input', () => {
-  const val = parseInt($('qtd-valor').value, 10);
+document.getElementById('qtd-valor').addEventListener('input', () => {
+  const val = parseInt(document.getElementById('qtd-valor').value, 10);
   if (!isNaN(val) && val >= 1 && val <= 99) qtdAtual = val;
 });
-$('qtd-valor').addEventListener('blur', () => {
-  const el = $('qtd-valor');
+document.getElementById('qtd-valor').addEventListener('blur', () => {
+  const el = document.getElementById('qtd-valor');
   if (!el.value || parseInt(el.value,10) < 1) {
     qtdAtual = 1;
     atualizarQtdInput();
   }
 });
 function submitAdd(){
-  const input = $('input-texto');
+  const input = document.getElementById('input-texto');
   const texto = input.value.trim();
   if (!texto) return;
   adicionar(texto, qtdAtual);
@@ -850,14 +896,14 @@ function submitAdd(){
   atualizarQtdInput();
   input.focus();
 }
-$('btn-adicionar').addEventListener('click', submitAdd);
-$('input-texto').addEventListener('keydown', (e) => {
+document.getElementById('btn-adicionar').addEventListener('click', submitAdd);
+document.getElementById('input-texto').addEventListener('keydown', (e) => {
   if (e.key === 'Enter') { e.preventDefault(); submitAdd(); }
 });
-$('btn-copiar').addEventListener('click', copiarTxt);
-$('btn-imprimir').addEventListener('click', () => window.print());
+document.getElementById('btn-copiar').addEventListener('click', copiarTxt);
+document.getElementById('btn-imprimir').addEventListener('click', () => window.print());
 
-// ---- inicialização ----
+
 carregarCache();
 render();
 buscarRemoto(true);
