@@ -332,6 +332,7 @@
       white-space: nowrap;
       transition: all 0.12s;
     }
+    .act-btn[hidden] { display: none; }
 
     .act-btn:active {
       background: var(--header-bg);
@@ -1678,6 +1679,10 @@
           btnInstalar.innerHTML = '<span class="ico">⬇️</span> Compartilhe → Adicionar à Tela de Início';
           btnInstalar.disabled = true;
           setTimeout(() => btnInstalar.hidden = true, 6000);
+        } else {
+          btnInstalar.innerHTML = '<span class="ico">⬇️</span> Indisponível neste navegador';
+          btnInstalar.disabled = true;
+          setTimeout(() => btnInstalar.hidden = true, 3000);
         }
       });
     }
