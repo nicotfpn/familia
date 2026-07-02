@@ -653,6 +653,56 @@
       display: block;
     }
 
+    .search-bar {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 12px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+    }
+    .search-bar[hidden] {
+      display: none;
+    }
+    .search-bar input {
+      flex: 1;
+      min-width: 0;
+      font-family: var(--font);
+      font-size: 0.8rem;
+      padding: 4px 8px;
+      border: 1px solid var(--border-light);
+      border-radius: var(--radius);
+      background: var(--surface);
+      color: var(--ink);
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    .search-bar input:focus {
+      border-color: var(--accent);
+    }
+    .search-bar input::placeholder {
+      color: var(--ink-soft);
+    }
+    .search-clear {
+      border: none;
+      background: transparent;
+      color: var(--ink-soft);
+      cursor: pointer;
+      padding: 2px 6px;
+      font-size: 0.85rem;
+      border-radius: var(--radius);
+    }
+    .search-clear:hover {
+      background: var(--header-bg);
+      color: var(--ink);
+    }
+    .hist {
+      font-size: 0.75rem;
+      color: var(--ink-soft);
+      font-weight: 400;
+      white-space: nowrap;
+    }
+
     @keyframes rowIn {
       from {
         opacity: 0;
@@ -1168,6 +1218,11 @@
 
     <div class="banner" id="banner"></div>
 
+    <div class="search-bar" id="search-bar" hidden>
+      <input type="text" id="input-search" placeholder="Buscar na lista…" maxlength="50">
+      <button class="search-clear" id="search-clear" hidden>✕</button>
+    </div>
+
     <div class="sheet" id="sheet">
       <div class="empty-state"><span class="ico">📋</span>
         <p>Lista vazia</p>
@@ -1202,6 +1257,9 @@
     let resolveModal = null;
     let toastTimer = null;
     let undoData = null;
+    let searchQuery = '';
+    const HISTORY_KEY = 'lista-purchase-history-v1';
+    let purchaseHistory = {};
 
     const sheet = document.getElementById('sheet');
     const contador = document.getElementById('contador');
@@ -1237,6 +1295,17 @@
         const raw = localStorage.getItem(CACHE_KEY);
         if (raw) { itens = JSON.parse(raw); render(); }
       } catch (e) { }
+    }
+
+    function carregarHistory() {
+      try {
+        const raw = localStorage.getItem(HISTORY_KEY);
+        if (raw) purchaseHistory = JSON.parse(raw);
+      } catch (e) { purchaseHistory = {}; }
+    }
+
+    function salvarHistory() {
+      try { localStorage.setItem(HISTORY_KEY, JSON.stringify(purchaseHistory)); } catch (e) { }
     }
 
     function setSort(campo) {
@@ -1308,7 +1377,7 @@
       window.open(url, '_blank', 'noopener');
     }
 
-    function confirmarAcao(msg) {
+    function confirmarAcao(msg, confirmText, isDanger) {
       return new Promise(function (resolve) {
         if (document.getElementById('modal').classList.contains('show')) {
           resolve(false);
@@ -1316,6 +1385,9 @@
         }
         resolveModal = resolve;
         document.getElementById('modal-msg').textContent = msg;
+        document.getElementById('modal-confirm').textContent = confirmText || 'Excluir';
+        document.getElementById('modal-confirm').className = 'modal-btn' + (isDanger !== false ? ' danger' : '');
+        document.getElementById('modal-cancel').textContent = 'Cancelar';
         document.getElementById('modal').classList.add('show');
       });
     }
@@ -1381,6 +1453,19 @@
         if (itens[i].fixado == null) itens[i].fixado = false;
       }
 
+      const searchBar = document.getElementById('search-bar');
+      const searchInput = document.getElementById('input-search');
+      const searchClear = document.getElementById('search-clear');
+      if (itens.length >= 15) {
+        searchBar.hidden = false;
+      } else {
+        searchBar.hidden = true;
+      }
+      if (searchClear) searchClear.hidden = !searchQuery;
+
+      const searchLower = searchQuery.toLowerCase().trim();
+      const exibir = searchLower ? itens.filter(function (i) { return i.texto.toLowerCase().includes(searchLower); }) : itens;
+
       const cmp = (a, b) => {
         let diff;
         if (sortBy === 'texto') diff = a.texto.localeCompare(b.texto, 'pt-BR');
@@ -1392,8 +1477,8 @@
       const fixados = [];
       const pendentes = [];
       const comprados = [];
-      for (var i = 0; i < itens.length; i++) {
-        const item = itens[i];
+      for (var i = 0; i < exibir.length; i++) {
+        const item = exibir[i];
         if (item.feito) {
           comprados.push(item);
         } else if (item.fixado) {
@@ -1459,13 +1544,23 @@
     }
 
     function itemHtml(item) {
+      let hist = '';
+      if (itens.length >= 15 && purchaseHistory) {
+        var key = item.texto.toLowerCase().trim();
+        if (purchaseHistory[key]) {
+          var dias = Math.floor((Date.now() - purchaseHistory[key]) / 86400000);
+          if (dias === 0) hist = ' <span class="hist">· hoje</span>';
+          else if (dias === 1) hist = ' <span class="hist">· ontem</span>';
+          else hist = ' <span class="hist">· ' + dias + ' dias</span>';
+        }
+      }
       return `<tr class="item${item.feito ? ' feito' : ''}" data-id="${item.id}">
     <td class="col-check">
       <div class="cb-excel">
         <svg viewBox="0 0 24 24"><polyline points="4,13 9,18 20,6"/></svg>
       </div>
     </td>
-    <td class="col-item"><span class="item-text">${escapeHtml(item.texto)}</span></td>
+    <td class="col-item"><span class="item-text">${escapeHtml(item.texto)}${hist}</span></td>
     <td class="col-qtd">
       <span class="qtd-inline">
         <button class="qtd-menos" aria-label="Diminuir">−</button>
@@ -1483,7 +1578,12 @@
     function toggle(id) {
       const item = itens.find(i => i.id === id);
       if (!item) return;
-      item.feito = !item.feito;
+      const becomingFeito = !item.feito;
+      item.feito = becomingFeito;
+      if (becomingFeito) {
+        purchaseHistory[item.texto.toLowerCase().trim()] = Date.now();
+        salvarHistory();
+      }
       render();
       salvarCache();
       sync();
@@ -1622,10 +1722,16 @@
         atualizarQtdInput();
       }
     });
-    function submitAdd() {
+    async function submitAdd() {
       const input = document.getElementById('input-texto');
       const texto = input.value.trim();
       if (!texto) return;
+      const textoNorm = texto.toLowerCase().trim();
+      const dup = itens.find(function (i) { return !i.feito && i.texto.toLowerCase().trim() === textoNorm; });
+      if (dup) {
+        const ok = await confirmarAcao('"' + texto + '" já está na lista. Adicionar mesmo assim?', 'Adicionar', false);
+        if (!ok) { input.focus(); return; }
+      }
       adicionar(texto, qtdAtual);
       input.value = '';
       qtdAtual = 1;
@@ -1702,7 +1808,23 @@
       });
     }
 
+    const searchInput = document.getElementById('input-search');
+    const searchClear = document.getElementById('search-clear');
+    searchInput.addEventListener('input', function () {
+      searchQuery = this.value;
+      searchClear.hidden = !searchQuery;
+      render();
+    });
+    searchClear.addEventListener('click', function () {
+      searchQuery = '';
+      searchInput.value = '';
+      this.hidden = true;
+      render();
+      searchInput.focus();
+    });
+
     carregarCache();
+    carregarHistory();
     render();
     buscarRemoto(true);
     setInterval(() => buscarRemoto(false), 4000);
