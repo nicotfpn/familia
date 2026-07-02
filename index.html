@@ -6,8 +6,8 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="theme-color" content="#e8eaed">
-<meta name="description" content="Lista de compras da família — estilo planilha">
-<title>Lista da Família</title>
+<meta name="description" content="Lista de compras — estilo planilha">
+<title>Lista de Compras</title>
 <link rel="icon" href="data:,">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
@@ -23,9 +23,9 @@
   --border-light:#dadce0;
   --border-faint:#e8eaed;
 
-  --green:#137333;
-  --green-light:#e6f4ea;
-  --green-mid:#a8dab5;
+  --accent:#0d47a1;
+  --accent-light:#e3edf7;
+  --accent-mid:#8ab4d4;
   --red:#c5221f;
   --red-light:#fce8e6;
   --blue:#1a73e8;
@@ -86,7 +86,7 @@ body{
   color:var(--ink);
   text-transform:uppercase;
 }
-.topbar-title h1 .accent{color:var(--green);}
+.topbar-title h1 .accent{color:var(--accent);}
 #contador{
   font-family:var(--font-mono);
   font-size:0.7rem;
@@ -115,7 +115,7 @@ body{
   outline:none;
   transition:border-color 0.15s;
 }
-.toolbar input[type="text"]:focus{border-color:var(--green);}
+.toolbar input[type="text"]:focus{border-color:var(--accent);}
 .toolbar input[type="text"]::placeholder{color:var(--ink-soft);}
 
 .qtd-group{
@@ -131,13 +131,13 @@ body{
   height:30px;
   border:none;
   background:transparent;
-  color:var(--green);
+  color:var(--accent);
   font-size:1rem;
   font-weight:600;
   cursor:pointer;
   font-family:var(--font);
 }
-.qtd-group button:active{background:var(--green-light);}
+.qtd-group button:active{background:var(--accent-light);}
 .qtd-group .qtd-input{
   font-family:var(--font-mono);
   font-size:0.8rem;
@@ -159,7 +159,7 @@ body{
   padding:0 14px;
   border:none;
   border-radius:var(--radius);
-  background:var(--green);
+  background:var(--accent);
   color:#fff;
   font-size:0.8rem;
   font-weight:600;
@@ -167,7 +167,7 @@ body{
   transition:background 0.15s;
   font-family:var(--font);
 }
-.add-btn:active{background:#0d5e2b;}
+.add-btn:active{background:#093170;}
 
 /* ===== ACTIONS BAR ===== */
 .actions-bar{
@@ -194,7 +194,7 @@ body{
 }
 .status-dot{
   width:6px;height:6px;border-radius:1px;
-  background:var(--green);
+  background:var(--accent);
   flex-shrink:0;
   transition:background 0.2s;
 }
@@ -231,7 +231,7 @@ body{
 #feedback-copy{
   font-family:var(--font-mono);
   font-size:0.6rem;
-  color:var(--green);
+  color:var(--accent);
   opacity:0;
   transition:opacity 0.2s;
   pointer-events:none;
@@ -333,10 +333,10 @@ th.sorted .sort-arrow{opacity:1;}
   flex-shrink:0;
   position:relative;
 }
-.cb-excel:active{border-color:var(--green);}
+.cb-excel:active{border-color:var(--accent);}
 .item.feito .cb-excel{
-  background:var(--green);
-  border-color:var(--green);
+  background:var(--accent);
+  border-color:var(--accent);
 }
 .cb-excel svg{
   width:11px;height:11px;
@@ -365,18 +365,18 @@ th.sorted .sort-arrow{opacity:1;}
 
 /* ===== SECTION ===== */
 .section-head td{
-  background:var(--green-light) !important;
-  border-bottom:1px solid var(--green-mid) !important;
+  background:var(--accent-light) !important;
+  border-bottom:1px solid var(--accent-mid) !important;
   padding:4px 10px !important;
   font-family:var(--font-mono);
   font-size:0.6rem;
   font-weight:500;
   text-transform:uppercase;
   letter-spacing:0.06em;
-  color:var(--green);
+  color:var(--accent);
   border-right:none !important;
 }
-.section-head:hover td{background:var(--green-light) !important;}
+.section-head:hover td{background:var(--accent-light) !important;}
 .section-head td:last-child{border-right:none !important;}
 
 .clear-row{
@@ -515,7 +515,7 @@ th.sorted .sort-arrow{opacity:1;}
 <div class="page">
   <div class="topbar">
     <div class="topbar-title">
-      <h1>Lista da <span class="accent">Família</span></h1>
+      <h1>Lista de <span class="accent">Compras</span></h1>
       <span id="contador">carregando…</span>
     </div>
 
@@ -545,7 +545,7 @@ th.sorted .sort-arrow{opacity:1;}
   <div class="banner" id="banner"></div>
 
   <div class="sheet" id="sheet">
-    <div class="empty-state"><span class="ico">📋</span><p>Lista vazia. Adicione o primeiro item pra começar!</p></div>
+    <div class="empty-state"><span class="ico">📋</span><p>Lista vazia</p></div>
   </div>
 </div>
 
@@ -623,7 +623,7 @@ function gerarTexto(){
   const pendentes = itens.filter(i => !i.feito);
   const comprados = itens.filter(i => i.feito);
   const linhas = [];
-  linhas.push('LISTA DA FAMÍLIA');
+  linhas.push('LISTA DE COMPRAS');
   linhas.push('━'.repeat(30));
   linhas.push('');
   if (pendentes.length){
@@ -685,7 +685,7 @@ function render(){
     : `${pendentes.length} pra comprar · ${comprados.length} no carrinho`;
 
   if (itens.length === 0){
-    sheet.innerHTML = '<div class="empty-state"><span class="ico">📋</span><p>Lista vazia. Adicione o primeiro item pra começar!</p></div>';
+    sheet.innerHTML = '<div class="empty-state"><span class="ico">📋</span><p>Lista vazia</p></div>';
     return;
   }
 
