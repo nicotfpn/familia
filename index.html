@@ -1260,6 +1260,9 @@
     let searchQuery = '';
     const HISTORY_KEY = 'lista-purchase-history-v1';
     let purchaseHistory = {};
+    const MILESTONE_KEY = 'lista-uso-real-v1';
+    let usoReal = false;
+    const API_HIST = '/api/historico';
 
     const sheet = document.getElementById('sheet');
     const contador = document.getElementById('contador');
@@ -1306,6 +1309,11 @@
 
     function salvarHistory() {
       try { localStorage.setItem(HISTORY_KEY, JSON.stringify(purchaseHistory)); } catch (e) { }
+    }
+
+    function carregarUsoReal() {
+      try { usoReal = localStorage.getItem(MILESTONE_KEY) === '1'; }
+      catch (e) { usoReal = false; }
     }
 
     function setSort(campo) {
@@ -1453,10 +1461,15 @@
         if (itens[i].fixado == null) itens[i].fixado = false;
       }
 
+      if (!usoReal && itens.length >= 15) {
+        usoReal = true;
+        try { localStorage.setItem(MILESTONE_KEY, '1'); } catch (e) { }
+      }
+
       const searchBar = document.getElementById('search-bar');
       const searchInput = document.getElementById('input-search');
       const searchClear = document.getElementById('search-clear');
-      if (itens.length >= 15) {
+      if (usoReal) {
         searchBar.hidden = false;
       } else {
         searchBar.hidden = true;
@@ -1490,11 +1503,37 @@
       pendentes.sort(cmp);
       comprados.sort(cmp);
 
-      contador.textContent = itens.length === 0 ? 'nenhum item'
-        : `${pendentes.length + fixados.length} pra comprar · ${comprados.length} no carrinho`;
+      const allPendentes = [];
+      const allFixados = [];
+      const allComprados = [];
+      for (var i = 0; i < itens.length; i++) {
+        const item = itens[i];
+        if (item.feito) {
+          allComprados.push(item);
+        } else if (item.fixado) {
+          allFixados.push(item);
+        } else {
+          allPendentes.push(item);
+        }
+      }
+
+      if (searchQuery.trim()) {
+        const n = exibir.length;
+        contador.textContent = n === 0 ? 'sem resultados'
+          : `${n} resultado${n !== 1 ? 's' : ''} para "${searchQuery}"`;
+      } else if (itens.length === 0) {
+        contador.textContent = 'nenhum item';
+      } else {
+        contador.textContent = `${allPendentes.length + allFixados.length} pra comprar · ${allComprados.length} no carrinho`;
+      }
 
       if (itens.length === 0) {
         sheet.innerHTML = '<div class="empty-state"><span class="ico">📋</span><p>Lista vazia</p></div>';
+        return;
+      }
+
+      if (exibir.length === 0) {
+        sheet.innerHTML = '<div class="empty-state"><span class="ico">🔍</span><p>Sem resultados para "' + escapeHtml(searchQuery) + '"</p></div>';
         return;
       }
 
@@ -1545,7 +1584,7 @@
 
     function itemHtml(item) {
       let hist = '';
-      if (itens.length >= 15 && purchaseHistory) {
+      if (usoReal && purchaseHistory) {
         var key = item.texto.toLowerCase().trim();
         if (purchaseHistory[key]) {
           var dias = Math.floor((Date.now() - purchaseHistory[key]) / 86400000);
@@ -1583,6 +1622,7 @@
       if (becomingFeito) {
         purchaseHistory[item.texto.toLowerCase().trim()] = Date.now();
         salvarHistory();
+        syncHistorico();
       }
       render();
       salvarCache();
@@ -1677,6 +1717,34 @@
         salvando = false;
         if (pendente) { pendente = false; sync(); }
       }
+    }
+
+    async function syncHistorico() {
+      try {
+        await fetch(API_HIST, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ historico: purchaseHistory })
+        });
+      } catch (e) { }
+    }
+
+    async function buscarHistoricoRemoto() {
+      try {
+        const resp = await fetch(API_HIST);
+        if (!resp.ok) return;
+        const remoto = await resp.json();
+        if (remoto && typeof remoto === 'object') {
+          let mudou = false;
+          for (const key in remoto) {
+            if (!purchaseHistory[key] || remoto[key] > purchaseHistory[key]) {
+              purchaseHistory[key] = remoto[key];
+              mudou = true;
+            }
+          }
+          if (mudou) { salvarHistory(); render(); }
+        }
+      } catch (e) { }
     }
 
     async function buscarRemoto(inicial) {
@@ -1825,11 +1893,13 @@
 
     carregarCache();
     carregarHistory();
+    carregarUsoReal();
     render();
     buscarRemoto(true);
+    buscarHistoricoRemoto();
     setInterval(() => buscarRemoto(false), 4000);
     document.addEventListener('visibilitychange', () => {
-      if (document.visibilityState === 'visible') buscarRemoto(false);
+      if (document.visibilityState === 'visible') { buscarRemoto(false); buscarHistoricoRemoto(); }
     });
 
   </script>
