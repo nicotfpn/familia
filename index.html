@@ -10,6 +10,7 @@
   <meta name="description" content="Lista de compras — estilo planilha">
   <meta name="apple-mobile-web-app-title" content="Lista">
   <title>Lista de Compras</title>
+  <script>(function(){try{var t=localStorage.getItem('lista-familia-tema');if(t==='light'||t==='dark'){document.documentElement.setAttribute('data-theme',t);var m=document.querySelector('meta[name="theme-color"]');if(m)m.setAttribute('content',t==='dark'?'#1a1d23':'#0d47a1')}}catch(e){}})()</script>
   <link rel="manifest" href="/manifest.json">
   <link rel="icon" href="/icon-192.png">
   <link rel="apple-touch-icon" href="/apple-touch-icon.png">
@@ -44,6 +45,68 @@
       --radius: 4px;
 
       --cell-pad: 8px 10px;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) {
+        --bg: #1a1d23;
+        --surface: #2d3139;
+        --header-bg: #262a30;
+        --border: #40444b;
+        --border-light: #383c43;
+        --border-faint: #30343b;
+        --accent: #1976d2;
+        --accent-light: #1a2d45;
+        --accent-mid: #2a5070;
+        --red: #ef5350;
+        --red-light: #3d1f1e;
+        --blue: #64b5f6;
+        --blue-light: #1a3145;
+        --ink: #e8eaed;
+        --ink-muted: #9aa0a6;
+        --ink-soft: #7a7f85;
+        --row-hover: #333740;
+      }
+      :root:not([data-theme="light"]) .sheet-table th.sorted {
+        background: #333740;
+      }
+    }
+
+    html[data-theme="dark"] {
+      --bg: #1a1d23;
+      --surface: #2d3139;
+      --header-bg: #262a30;
+      --border: #40444b;
+      --border-light: #383c43;
+      --border-faint: #30343b;
+      --accent: #1976d2;
+      --accent-light: #1a2d45;
+      --accent-mid: #2a5070;
+      --red: #ef5350;
+      --red-light: #3d1f1e;
+      --blue: #64b5f6;
+      --blue-light: #1a3145;
+      --ink: #e8eaed;
+      --ink-muted: #9aa0a6;
+      --ink-soft: #7a7f85;
+      --row-hover: #333740;
+    }
+    html[data-theme="dark"] .sheet-table th.sorted {
+      background: #333740;
+    }
+
+    body,
+    .topbar,
+    .toolbar,
+    .actions-bar,
+    .sheet-table td,
+    .sheet-table th,
+    .act-btn,
+    .status-dot,
+    .cb-excel,
+    .modal-box,
+    .banner {
+      transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
     }
 
     *,
@@ -406,7 +469,7 @@
     }
 
     .col-acao {
-      width: 38px;
+      width: 62px;
       text-align: center !important;
     }
 
@@ -637,7 +700,7 @@
       }
 
       .col-acao {
-        width: 32px;
+        width: 54px;
       }
 
       .sheet-table th,
@@ -729,6 +792,10 @@
         width: 72px;
       }
 
+      .col-acao {
+        width: 64px;
+      }
+
       body {
         font-size: 15px;
       }
@@ -805,7 +872,7 @@
       }
 
       .col-acao {
-        width: 44px;
+        width: 66px;
       }
 
       body {
@@ -934,6 +1001,152 @@
         transition-duration: 0.001ms !important;
       }
     }
+
+    /* Modal */
+    .modal-overlay {
+      position: fixed;
+      top: 0; right: 0; bottom: 0; left: 0;
+      z-index: 100;
+      background: rgba(0,0,0,0.4);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.15s, visibility 0.15s;
+    }
+    .modal-overlay.show {
+      opacity: 1;
+      visibility: visible;
+    }
+    .modal-box {
+      background: var(--surface);
+      border-radius: 8px;
+      padding: 24px 28px 20px;
+      max-width: 360px;
+      width: 90%;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+      text-align: center;
+    }
+    .modal-msg {
+      font-size: 0.9rem;
+      color: var(--ink);
+      margin-bottom: 20px;
+      line-height: 1.5;
+    }
+    .modal-actions {
+      display: flex;
+      gap: 8px;
+      justify-content: center;
+    }
+    .modal-btn {
+      min-width: 90px;
+      height: 34px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
+      color: var(--ink-muted);
+      font-family: var(--font);
+      font-size: 0.8rem;
+      font-weight: 500;
+      cursor: pointer;
+      padding: 0 16px;
+      transition: all 0.12s;
+    }
+    .modal-btn:active {
+      background: var(--header-bg);
+    }
+    .modal-btn.danger {
+      background: var(--red);
+      border-color: var(--red);
+      color: #fff;
+    }
+    .modal-btn.danger:active {
+      background: #a50e0e;
+    }
+
+    /* Toast */
+    .toast {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 90;
+      background: #1f1f1f;
+      color: #fff;
+      padding: 10px 16px;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.25);
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.2s, visibility 0.2s;
+      white-space: nowrap;
+      pointer-events: none;
+    }
+    .toast.show {
+      opacity: 1;
+      visibility: visible;
+      pointer-events: auto;
+    }
+    .toast-btn {
+      background: transparent;
+      border: 1px solid rgba(255,255,255,0.3);
+      color: #fff;
+      font-family: var(--font);
+      font-size: 0.78rem;
+      font-weight: 600;
+      padding: 4px 12px;
+      border-radius: var(--radius);
+      cursor: pointer;
+      transition: background 0.12s;
+      flex-shrink: 0;
+    }
+    .toast-btn:active {
+      background: rgba(255,255,255,0.12);
+    }
+
+    /* Pin button */
+    .pin-cell {
+      width: 26px;
+      height: 26px;
+      border: none;
+      background: transparent;
+      font-size: 0.8rem;
+      cursor: pointer;
+      border-radius: var(--radius);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.1s;
+      padding: 0;
+      line-height: 1;
+      opacity: 0.35;
+      vertical-align: middle;
+    }
+    .pin-cell.ativo {
+      opacity: 1;
+    }
+    .pin-cell:hover {
+      background: var(--accent-light);
+      opacity: 1;
+    }
+
+    @media (max-width:500px) {
+      .toast {
+        font-size: 0.8rem;
+        padding: 8px 12px;
+        bottom: 12px;
+        max-width: 94%;
+        white-space: normal;
+      }
+      .modal-box {
+        padding: 20px 20px 16px;
+      }
+    }
   </style>
 </head>
 
@@ -957,6 +1170,7 @@
 
       <div class="actions-bar">
         <div class="actions-left">
+          <button class="act-btn" id="btn-tema"><span class="ico" id="tema-icon">🌙</span> <span id="tema-label">Auto</span></button>
           <button class="act-btn" id="btn-instalar" hidden><span class="ico">⬇️</span> Instalar</button>
           <button class="act-btn highlight" id="btn-whatsapp"><span class="ico">📲</span> WhatsApp</button>
           <button class="act-btn" id="btn-copiar"><span class="ico">📄</span> Copiar TXT</button>
@@ -982,12 +1196,19 @@
   <script>
     const API = '/api/lista';
     const CACHE_KEY = 'lista-familia-cache-v1';
+    const THEME_KEY = 'lista-familia-tema';
+    const COR_THEME_LIGHT = '#0d47a1';
+    const COR_THEME_DARK = '#1a1d23';
+    let temaAtual = 'auto';
     let itens = [];
     let qtdAtual = 1;
     let salvando = false;
     let pendente = false;
     let sortBy = 'criadoEm';
     let sortDir = 'asc';
+    let resolveModal = null;
+    let toastTimer = null;
+    let undoData = null;
 
     const sheet = document.getElementById('sheet');
     const contador = document.getElementById('contador');
@@ -1023,6 +1244,46 @@
         const raw = localStorage.getItem(CACHE_KEY);
         if (raw) { itens = JSON.parse(raw); render(); }
       } catch (e) { }
+    }
+
+    function getTemaEfetivo() {
+      if (temaAtual === 'light') return 'light';
+      if (temaAtual === 'dark') return 'dark';
+      return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    }
+
+    function atualizarThemeColor(efetivo) {
+      var meta = document.querySelector('meta[name="theme-color"]');
+      if (meta) meta.setAttribute('content', efetivo === 'dark' ? COR_THEME_DARK : COR_THEME_LIGHT);
+    }
+
+    function atualizarUITema() {
+      var efetivo = getTemaEfetivo();
+      atualizarThemeColor(efetivo);
+      var icon = document.getElementById('tema-icon');
+      if (icon) icon.textContent = efetivo === 'dark' ? '☀️' : '🌙';
+      var label = document.getElementById('tema-label');
+      if (label) {
+        var nomes = { auto: 'Auto', light: 'Claro', dark: 'Escuro' };
+        label.textContent = nomes[temaAtual] || 'Auto';
+      }
+    }
+
+    function aplicarTema(tema) {
+      temaAtual = tema;
+      if (tema === 'auto') {
+        document.documentElement.removeAttribute('data-theme');
+      } else {
+        document.documentElement.setAttribute('data-theme', tema);
+      }
+      try { localStorage.setItem(THEME_KEY, tema); } catch (e) { }
+      atualizarUITema();
+    }
+
+    function ciclarTema() {
+      var ordem = ['light', 'dark', 'auto'];
+      var idx = ordem.indexOf(temaAtual);
+      aplicarTema(ordem[(idx + 1) % ordem.length]);
     }
 
     function setSort(campo) {
@@ -1096,7 +1357,79 @@
       window.open(url, '_blank', 'noopener');
     }
 
+    function confirmarAcao(msg) {
+      return new Promise(function (resolve) {
+        if (document.getElementById('modal').classList.contains('show')) {
+          resolve(false);
+          return;
+        }
+        resolveModal = resolve;
+        document.getElementById('modal-msg').textContent = msg;
+        document.getElementById('modal').classList.add('show');
+      });
+    }
+
+    function modalConfirmar() {
+      document.getElementById('modal').classList.remove('show');
+      if (resolveModal) { resolveModal(true); resolveModal = null; }
+    }
+
+    function modalCancelar() {
+      document.getElementById('modal').classList.remove('show');
+      if (resolveModal) { resolveModal(false); resolveModal = null; }
+    }
+
+    function mostrarToastUndo(msg, removidos) {
+      if (toastTimer) clearTimeout(toastTimer);
+      undoData = removidos;
+      document.getElementById('toast-msg').textContent = msg;
+      document.getElementById('toast').classList.add('show');
+      toastTimer = setTimeout(esconderToast, 6000);
+    }
+
+    function esconderToast() {
+      document.getElementById('toast').classList.remove('show');
+      if (toastTimer) { clearTimeout(toastTimer); toastTimer = null; }
+      undoData = null;
+    }
+
+    function desfazerUndo() {
+      try {
+        if (!undoData) return;
+        var data = undoData.slice().sort(function (a, b) {
+          return a.indiceOriginal - b.indiceOriginal;
+        });
+        for (var i = 0; i < data.length; i++) {
+          itens.splice(data[i].indiceOriginal + i, 0, data[i].item);
+        }
+        esconderToast();
+        render();
+        salvarCache();
+        sync();
+      } catch (e) {
+        esconderToast();
+      }
+    }
+
+    function togglePin(id) {
+      try {
+        for (var i = 0; i < itens.length; i++) {
+          if (itens[i].id === id) {
+            itens[i].fixado = !itens[i].fixado;
+            render();
+            salvarCache();
+            sync();
+            return;
+          }
+        }
+      } catch (e) { }
+    }
+
     function render() {
+      for (var i = 0; i < itens.length; i++) {
+        if (itens[i].fixado == null) itens[i].fixado = false;
+      }
+
       const cmp = (a, b) => {
         let diff;
         if (sortBy === 'texto') diff = a.texto.localeCompare(b.texto, 'pt-BR');
@@ -1105,11 +1438,24 @@
         return sortDir === 'asc' ? diff : -diff;
       };
 
-      const pendentes = itens.filter(i => !i.feito).sort(cmp);
-      const comprados = itens.filter(i => i.feito).sort(cmp);
+      const fixados = [];
+      const pendentes = [];
+      const comprados = [];
+      for (var i = 0; i < itens.length; i++) {
+        const item = itens[i];
+        if (item.feito) {
+          comprados.push(item);
+        } else if (item.fixado) {
+          fixados.push(item);
+        } else {
+          pendentes.push(item);
+        }
+      }
+      pendentes.sort(cmp);
+      comprados.sort(cmp);
 
       contador.textContent = itens.length === 0 ? 'nenhum item'
-        : `${pendentes.length} pra comprar · ${comprados.length} no carrinho`;
+        : `${pendentes.length + fixados.length} pra comprar · ${comprados.length} no carrinho`;
 
       if (itens.length === 0) {
         sheet.innerHTML = '<div class="empty-state"><span class="ico">📋</span><p>Lista vazia</p></div>';
@@ -1122,6 +1468,11 @@
         `<th class="col-qtd sortable${sortBy === 'qtd' ? ' sorted' : ''}" data-sort="qtd">Qtd<span class="sort-arrow">${sortArrow('qtd')}</span></th>` +
         '<th class="col-acao"></th>' +
         '</tr></thead><tbody>';
+
+      if (fixados.length) {
+        html += '<tr class="section-head"><td colspan="4">📌 Fixados</td></tr>';
+        html += fixados.map(itemHtml).join('');
+      }
 
       if (pendentes.length) {
         html += pendentes.map(itemHtml).join('');
@@ -1144,6 +1495,8 @@
           const id = tr.dataset.id;
           tr.querySelector('.cb-excel').addEventListener('click', () => toggle(id));
           tr.querySelector('.del-cell').addEventListener('click', () => remover(id));
+          const pinCell = tr.querySelector('.pin-cell');
+          if (pinCell) pinCell.addEventListener('click', () => togglePin(id));
           const qtdMenos = tr.querySelector('.qtd-menos');
           const qtdMais = tr.querySelector('.qtd-mais');
           if (qtdMenos) qtdMenos.addEventListener('click', () => mudarQtd(id, -1));
@@ -1169,7 +1522,10 @@
         <button class="qtd-mais" aria-label="Aumentar">+</button>
       </span>
     </td>
-    <td class="col-acao"><button class="del-cell" aria-label="Remover">✕</button></td>
+    <td class="col-acao">
+      <button class="pin-cell${item.fixado ? ' ativo' : ''}" aria-label="Fixar">📌</button>
+      <button class="del-cell" aria-label="Remover">✕</button>
+    </td>
   </tr>`;
     }
 
@@ -1183,17 +1539,44 @@
     }
 
     function remover(id) {
-      itens = itens.filter(i => i.id !== id);
-      render();
-      salvarCache();
-      sync();
+      var idx = -1;
+      for (var i = 0; i < itens.length; i++) {
+        if (itens[i].id === id) { idx = i; break; }
+      }
+      if (idx === -1) return;
+      var item = itens[idx];
+      confirmarAcao('Remover "' + item.texto + '"?').then(function (ok) {
+        if (!ok) return;
+        var removido = itens.splice(idx, 1)[0];
+        render();
+        salvarCache();
+        sync();
+        mostrarToastUndo('Item removido', [{ item: removido, indiceOriginal: idx }]);
+      });
     }
 
     function limparComprados() {
-      itens = itens.filter(i => !i.feito);
-      render();
-      salvarCache();
-      sync();
+      var comprados = [];
+      for (var i = itens.length - 1; i >= 0; i--) {
+        if (itens[i].feito) comprados.push(itens[i]);
+      }
+      if (comprados.length === 0) return;
+      var msg = comprados.length === 1 ? 'Remover 1 item marcado?' : 'Remover ' + comprados.length + ' itens marcados?';
+      confirmarAcao(msg).then(function (ok) {
+        if (!ok) return;
+        var removidos = [];
+        for (var i = itens.length - 1; i >= 0; i--) {
+          if (itens[i].feito) {
+            removidos.push({ item: itens[i], indiceOriginal: i });
+            itens.splice(i, 1);
+          }
+        }
+        render();
+        salvarCache();
+        sync();
+        var msg2 = removidos.length === 1 ? '1 item removido' : removidos.length + ' itens removidos';
+        mostrarToastUndo(msg2, removidos);
+      });
     }
 
     function mudarQtd(id, delta) {
@@ -1212,6 +1595,7 @@
         texto: t.charAt(0).toUpperCase() + t.slice(1),
         qtd,
         feito: false,
+        fixado: false,
         criadoEm: Date.now()
       });
       render();
@@ -1305,6 +1689,13 @@
     document.getElementById('btn-imprimir').addEventListener('click', () => window.print());
     document.getElementById('btn-whatsapp').addEventListener('click', enviarWhatsApp);
 
+    document.getElementById('modal-cancel').addEventListener('click', modalCancelar);
+    document.getElementById('modal-confirm').addEventListener('click', modalConfirmar);
+    document.getElementById('modal').addEventListener('click', function (e) {
+      if (e.target === this) modalCancelar();
+    });
+    document.getElementById('toast-btn').addEventListener('click', desfazerUndo);
+
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
         navigator.serviceWorker.register('/sw.js').catch(() => { });
@@ -1325,6 +1716,16 @@
       });
     });
 
+    try {
+      var saved = localStorage.getItem(THEME_KEY);
+      if (saved === 'light' || saved === 'dark' || saved === 'auto') temaAtual = saved;
+    } catch (e) { }
+    aplicarTema(temaAtual);
+
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function () {
+      if (temaAtual === 'auto') atualizarUITema();
+    });
+
     carregarCache();
     render();
     buscarRemoto(true);
@@ -1332,7 +1733,24 @@
     document.addEventListener('visibilitychange', () => {
       if (document.visibilityState === 'visible') buscarRemoto(false);
     });
+
+    document.getElementById('btn-tema').addEventListener('click', ciclarTema);
   </script>
+
+  <div class="modal-overlay" id="modal">
+    <div class="modal-box">
+      <div class="modal-msg" id="modal-msg"></div>
+      <div class="modal-actions">
+        <button class="modal-btn" id="modal-cancel">Cancelar</button>
+        <button class="modal-btn danger" id="modal-confirm">Excluir</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast">
+    <span id="toast-msg"></span>
+    <button class="toast-btn" id="toast-btn">Desfazer</button>
+  </div>
 </body>
 
 </html>
