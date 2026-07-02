@@ -1675,14 +1675,27 @@
           deferredPrompt.prompt();
           await deferredPrompt.userChoice;
           deferredPrompt = null;
-        } else if (isIOS) {
+          return;
+        }
+        if (isIOS) {
           btnInstalar.innerHTML = '<span class="ico">⬇️</span> Compartilhe → Adicionar à Tela de Início';
           btnInstalar.disabled = true;
           setTimeout(() => btnInstalar.hidden = true, 6000);
+          return;
+        }
+        btnInstalar.innerHTML = '<span class="ico">⬇️</span> Aguardando…';
+        btnInstalar.disabled = true;
+        await new Promise(r => setTimeout(r, 3000));
+        if (deferredPrompt) {
+          btnInstalar.disabled = false;
+          btnInstalar.innerHTML = '<span class="ico">⬇️</span> Instalar';
+          deferredPrompt.prompt();
+          await deferredPrompt.userChoice;
+          deferredPrompt = null;
+          btnInstalar.hidden = true;
         } else {
-          btnInstalar.innerHTML = '<span class="ico">⬇️</span> Indisponível neste navegador';
-          btnInstalar.disabled = true;
-          setTimeout(() => btnInstalar.hidden = true, 3000);
+          btnInstalar.innerHTML = '<span class="ico">⬇️</span> Use ⋮ → Instalar página como app';
+          setTimeout(() => btnInstalar.hidden = true, 6000);
         }
       });
     }
