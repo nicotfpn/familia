@@ -10,7 +10,6 @@
   <meta name="description" content="Lista de compras — estilo planilha">
   <meta name="apple-mobile-web-app-title" content="Lista">
   <title>Lista de Compras</title>
-  <script>(function(){try{var t=localStorage.getItem('lista-familia-tema');if(t==='light'||t==='dark'){document.documentElement.setAttribute('data-theme',t);var m=document.querySelector('meta[name="theme-color"]');if(m)m.setAttribute('content',t==='dark'?'#1a1d23':'#0d47a1')}}catch(e){}})()</script>
   <link rel="manifest" href="/manifest.json">
   <link rel="icon" href="/icon-192.png">
   <link rel="apple-touch-icon" href="/apple-touch-icon.png">
@@ -48,7 +47,7 @@
     }
 
     @media (prefers-color-scheme: dark) {
-      :root:not([data-theme="light"]) {
+      :root {
         --bg: #1a1d23;
         --surface: #2d3139;
         --header-bg: #262a30;
@@ -67,33 +66,12 @@
         --ink-soft: #7a7f85;
         --row-hover: #333740;
       }
-      :root:not([data-theme="light"]) .sheet-table th.sorted {
+      .sheet-table th.sorted {
         background: #333740;
       }
     }
 
-    html[data-theme="dark"] {
-      --bg: #1a1d23;
-      --surface: #2d3139;
-      --header-bg: #262a30;
-      --border: #40444b;
-      --border-light: #383c43;
-      --border-faint: #30343b;
-      --accent: #1976d2;
-      --accent-light: #1a2d45;
-      --accent-mid: #2a5070;
-      --red: #ef5350;
-      --red-light: #3d1f1e;
-      --blue: #64b5f6;
-      --blue-light: #1a3145;
-      --ink: #e8eaed;
-      --ink-muted: #9aa0a6;
-      --ink-soft: #7a7f85;
-      --row-hover: #333740;
-    }
-    html[data-theme="dark"] .sheet-table th.sorted {
-      background: #333740;
-    }
+
 
     body,
     .topbar,
@@ -1170,7 +1148,6 @@
 
       <div class="actions-bar">
         <div class="actions-left">
-          <button class="act-btn" id="btn-tema"><span class="ico" id="tema-icon">🌙</span> <span id="tema-label">Auto</span></button>
           <button class="act-btn" id="btn-instalar" hidden><span class="ico">⬇️</span> Instalar</button>
           <button class="act-btn highlight" id="btn-whatsapp"><span class="ico">📲</span> WhatsApp</button>
           <button class="act-btn" id="btn-copiar"><span class="ico">📄</span> Copiar TXT</button>
@@ -1193,13 +1170,24 @@
     </div>
   </div>
 
+  <div class="modal-overlay" id="modal">
+    <div class="modal-box">
+      <div class="modal-msg" id="modal-msg"></div>
+      <div class="modal-actions">
+        <button class="modal-btn" id="modal-cancel">Cancelar</button>
+        <button class="modal-btn danger" id="modal-confirm">Excluir</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast">
+    <span id="toast-msg"></span>
+    <button class="toast-btn" id="toast-btn">Desfazer</button>
+  </div>
+
   <script>
     const API = '/api/lista';
     const CACHE_KEY = 'lista-familia-cache-v1';
-    const THEME_KEY = 'lista-familia-tema';
-    const COR_THEME_LIGHT = '#0d47a1';
-    const COR_THEME_DARK = '#1a1d23';
-    let temaAtual = 'auto';
     let itens = [];
     let qtdAtual = 1;
     let salvando = false;
@@ -1244,46 +1232,6 @@
         const raw = localStorage.getItem(CACHE_KEY);
         if (raw) { itens = JSON.parse(raw); render(); }
       } catch (e) { }
-    }
-
-    function getTemaEfetivo() {
-      if (temaAtual === 'light') return 'light';
-      if (temaAtual === 'dark') return 'dark';
-      return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-    }
-
-    function atualizarThemeColor(efetivo) {
-      var meta = document.querySelector('meta[name="theme-color"]');
-      if (meta) meta.setAttribute('content', efetivo === 'dark' ? COR_THEME_DARK : COR_THEME_LIGHT);
-    }
-
-    function atualizarUITema() {
-      var efetivo = getTemaEfetivo();
-      atualizarThemeColor(efetivo);
-      var icon = document.getElementById('tema-icon');
-      if (icon) icon.textContent = efetivo === 'dark' ? '☀️' : '🌙';
-      var label = document.getElementById('tema-label');
-      if (label) {
-        var nomes = { auto: 'Auto', light: 'Claro', dark: 'Escuro' };
-        label.textContent = nomes[temaAtual] || 'Auto';
-      }
-    }
-
-    function aplicarTema(tema) {
-      temaAtual = tema;
-      if (tema === 'auto') {
-        document.documentElement.removeAttribute('data-theme');
-      } else {
-        document.documentElement.setAttribute('data-theme', tema);
-      }
-      try { localStorage.setItem(THEME_KEY, tema); } catch (e) { }
-      atualizarUITema();
-    }
-
-    function ciclarTema() {
-      var ordem = ['light', 'dark', 'auto'];
-      var idx = ordem.indexOf(temaAtual);
-      aplicarTema(ordem[(idx + 1) % ordem.length]);
     }
 
     function setSort(campo) {
@@ -1702,29 +1650,37 @@
       });
     }
 
-    let installPrompt = null;
+    let deferredPrompt = null;
     const btnInstalar = document.getElementById('btn-instalar');
-    window.addEventListener('beforeinstallprompt', (e) => {
-      e.preventDefault();
-      installPrompt = e;
-      btnInstalar.hidden = false;
-      btnInstalar.addEventListener('click', async () => {
-        btnInstalar.hidden = true;
-        installPrompt.prompt();
-        const result = await installPrompt.userChoice;
-        installPrompt = null;
+    const jaInstalado = window.matchMedia('(display-mode: standalone)').matches;
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+
+    if (jaInstalado) {
+      btnInstalar.hidden = true;
+    } else {
+      window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        deferredPrompt = e;
+        btnInstalar.hidden = false;
       });
-    });
 
-    try {
-      var saved = localStorage.getItem(THEME_KEY);
-      if (saved === 'light' || saved === 'dark' || saved === 'auto') temaAtual = saved;
-    } catch (e) { }
-    aplicarTema(temaAtual);
+      if (isIOS) {
+        btnInstalar.hidden = false;
+      }
 
-    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function () {
-      if (temaAtual === 'auto') atualizarUITema();
-    });
+      btnInstalar.addEventListener('click', async () => {
+        if (deferredPrompt) {
+          btnInstalar.hidden = true;
+          deferredPrompt.prompt();
+          await deferredPrompt.userChoice;
+          deferredPrompt = null;
+        } else if (isIOS) {
+          btnInstalar.innerHTML = '<span class="ico">⬇️</span> Compartilhe → Adicionar à Tela de Início';
+          btnInstalar.disabled = true;
+          setTimeout(() => btnInstalar.hidden = true, 6000);
+        }
+      });
+    }
 
     carregarCache();
     render();
@@ -1734,23 +1690,7 @@
       if (document.visibilityState === 'visible') buscarRemoto(false);
     });
 
-    document.getElementById('btn-tema').addEventListener('click', ciclarTema);
   </script>
-
-  <div class="modal-overlay" id="modal">
-    <div class="modal-box">
-      <div class="modal-msg" id="modal-msg"></div>
-      <div class="modal-actions">
-        <button class="modal-btn" id="modal-cancel">Cancelar</button>
-        <button class="modal-btn danger" id="modal-confirm">Excluir</button>
-      </div>
-    </div>
-  </div>
-
-  <div class="toast" id="toast">
-    <span id="toast-msg"></span>
-    <button class="toast-btn" id="toast-btn">Desfazer</button>
-  </div>
 </body>
 
 </html>
