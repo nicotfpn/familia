@@ -957,6 +957,7 @@
 
       <div class="actions-bar">
         <div class="actions-left">
+          <button class="act-btn" id="btn-instalar" hidden><span class="ico">⬇️</span> Instalar</button>
           <button class="act-btn highlight" id="btn-whatsapp"><span class="ico">📲</span> WhatsApp</button>
           <button class="act-btn" id="btn-copiar"><span class="ico">📄</span> Copiar TXT</button>
           <button class="act-btn" id="btn-imprimir"><span class="ico">🖨️</span> Imprimir</button>
@@ -1309,6 +1310,20 @@
         navigator.serviceWorker.register('/sw.js').catch(() => { });
       });
     }
+
+    let installPrompt = null;
+    const btnInstalar = document.getElementById('btn-instalar');
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      installPrompt = e;
+      btnInstalar.hidden = false;
+      btnInstalar.addEventListener('click', async () => {
+        btnInstalar.hidden = true;
+        installPrompt.prompt();
+        const result = await installPrompt.userChoice;
+        installPrompt = null;
+      });
+    });
 
     carregarCache();
     render();
