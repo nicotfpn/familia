@@ -1259,7 +1259,6 @@
       const comprados = itens.filter(i => i.feito);
       const linhas = [];
       linhas.push('LISTA DE COMPRAS');
-      linhas.push('━'.repeat(30));
       linhas.push('');
       if (pendentes.length) {
         linhas.push('📌 PRA COMPRAR');
@@ -1279,7 +1278,6 @@
         linhas.push('  (lista vazia)');
         linhas.push('');
       }
-      linhas.push('━'.repeat(30));
       return linhas.join('\n');
     }
 
