@@ -1469,7 +1469,11 @@
     function enviarWhatsApp() {
       const texto = gerarTexto();
       const url = 'https://wa.me/?text=' + encodeURIComponent(texto);
-      window.open(url, '_blank', 'noopener');
+      if (/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
+        location.href = url;
+      } else {
+        window.open(url, '_blank', 'noopener');
+      }
     }
 
     function confirmarAcao(msg, confirmText, isDanger) {
@@ -1636,10 +1640,6 @@
           });
           tr.querySelector('.del-cell').addEventListener('click', () => remover(id));
           tr.querySelector('.edit-cell').addEventListener('click', () => abrirEditarItem(id));
-          const qtdMenos = tr.querySelector('.qtd-menos');
-          const qtdMais = tr.querySelector('.qtd-mais');
-          if (qtdMenos) qtdMenos.addEventListener('click', () => mudarQtd(id, -1));
-          if (qtdMais) qtdMais.addEventListener('click', () => mudarQtd(id, 1));
         });
         const limpar = document.getElementById('btn-limpar');
         if (limpar) limpar.addEventListener('click', limparComprados);
@@ -1665,11 +1665,7 @@
     </td>
     <td class="col-item"><span class="item-text">${escapeHtml(item.texto)}${hist}</span></td>
     <td class="col-qtd">
-      <span class="qtd-inline">
-        <button class="qtd-menos" aria-label="Diminuir">−</button>
-        <span class="qtd-val">${item.qtd}</span>
-        <button class="qtd-mais" aria-label="Aumentar">+</button>
-      </span>
+      <span class="qtd-val">${item.qtd}</span>
     </td>
     <td class="col-acao">
       <span class="col-acao-actions">
@@ -1734,15 +1730,6 @@
         const msg2 = removidos.length === 1 ? '1 item removido' : removidos.length + ' itens removidos';
         mostrarToastUndo(msg2, removidos);
       });
-    }
-
-    function mudarQtd(id, delta) {
-      const item = itens.find(i => i.id === id);
-      if (!item) return;
-      item.qtd = Math.max(QTD_MIN, Math.min(QTD_MAX, item.qtd + delta));
-      render();
-      salvarCache();
-      sync();
     }
 
     let editandoId = null;
