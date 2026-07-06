@@ -1051,6 +1051,12 @@
       }
     }
 
+    .sr-only {
+      position: absolute; width: 1px; height: 1px;
+      padding: 0; margin: -1px; overflow: hidden;
+      clip: rect(0,0,0,0); white-space: nowrap; border: 0;
+    }
+
     @media (prefers-reduced-motion:reduce) {
       * {
         animation-duration: 0.001ms !important;
@@ -1189,9 +1195,11 @@
       </div>
 
       <div class="toolbar">
+        <label for="input-texto" class="sr-only">Nome do item</label>
         <input type="text" id="input-texto" placeholder="Novo item…" maxlength="80" required>
         <div class="qtd-group">
           <button type="button" id="qtd-menos" aria-label="Diminuir">−</button>
+          <label for="qtd-valor" class="sr-only">Quantidade</label>
           <input type="number" id="qtd-valor" class="qtd-input" value="1" min="1" max="99">
           <button type="button" id="qtd-mais" aria-label="Aumentar">+</button>
         </div>
@@ -1216,6 +1224,7 @@
     <div class="banner" id="banner"></div>
 
     <div class="search-bar" id="search-bar" hidden>
+      <label for="input-search" class="sr-only">Buscar na lista</label>
       <input type="text" id="input-search" placeholder="Buscar na lista…" maxlength="50">
       <button class="search-clear" id="search-clear" hidden>✕</button>
     </div>
@@ -1245,6 +1254,12 @@
   <script>
     const API = '/api/lista';
     const CACHE_KEY = 'lista-familia-cache-v1';
+    const FETCH_TIMEOUT_MS = 8000;
+    const POLL_INTERVAL_MS = 8000;
+    const TOAST_DURATION_MS = 6000;
+    const QTD_MAX = 99;
+    const QTD_MIN = 1;
+    const MILESTONE_QTD_ITENS = 15;
     let itens = [];
     let qtdAtual = 1;
     let salvando = false;
@@ -1276,7 +1291,15 @@
       });
     }
 
-    function fetchWithTimeout(url, options = {}, timeout = 8000) {
+    function debounce(fn, delay) {
+      let timer;
+      return function (...args) {
+        clearTimeout(timer);
+        timer = setTimeout(() => fn.apply(this, args), delay);
+      };
+    }
+
+    function fetchWithTimeout(url, options = {}, timeout = FETCH_TIMEOUT_MS) {
       const controller = new AbortController();
       const timer = setTimeout(() => controller.abort(), timeout);
       return fetch(url, { ...options, signal: controller.signal }).finally(() => clearTimeout(timer));
@@ -1420,7 +1443,7 @@
       undoData = removidos;
       document.getElementById('toast-msg').textContent = msg;
       document.getElementById('toast').classList.add('show');
-      toastTimer = setTimeout(esconderToast, 6000);
+      toastTimer = setTimeout(esconderToast, TOAST_DURATION_MS);
     }
 
     function esconderToast() {
@@ -1432,10 +1455,10 @@
     function desfazerUndo() {
       try {
         if (!undoData) return;
-        var data = undoData.slice().sort(function (a, b) {
+        const data = undoData.slice().sort(function (a, b) {
           return a.indiceOriginal - b.indiceOriginal;
         });
-        for (var i = 0; i < data.length; i++) {
+        for (let i = 0; i < data.length; i++) {
           itens.splice(data[i].indiceOriginal + i, 0, data[i].item);
         }
         esconderToast();
@@ -1448,7 +1471,7 @@
     }
 
     function render() {
-      if (!usoReal && itens.length >= 15) {
+      if (!usoReal && itens.length >= MILESTONE_QTD_ITENS) {
         usoReal = true;
         try { localStorage.setItem(MILESTONE_KEY, '1'); } catch (e) { }
       }
@@ -1476,7 +1499,7 @@
 
       const pendentes = [];
       const comprados = [];
-      for (var i = 0; i < exibir.length; i++) {
+      for (let i = 0; i < exibir.length; i++) {
         const item = exibir[i];
         if (item.feito) {
           comprados.push(item);
@@ -1489,7 +1512,7 @@
 
       const allPendentes = [];
       const allComprados = [];
-      for (var i = 0; i < itens.length; i++) {
+      for (let i = 0; i < itens.length; i++) {
         const item = itens[i];
         if (item.feito) {
           allComprados.push(item);
@@ -1544,7 +1567,14 @@
         });
         table.querySelectorAll('tr.item').forEach(tr => {
           const id = tr.dataset.id;
-          tr.querySelector('.cb-excel').addEventListener('click', () => toggle(id));
+          const cb = tr.querySelector('.cb-excel');
+          cb.addEventListener('click', () => toggle(id));
+          cb.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              toggle(id);
+            }
+          });
           tr.querySelector('.del-cell').addEventListener('click', () => remover(id));
           const qtdMenos = tr.querySelector('.qtd-menos');
           const qtdMais = tr.querySelector('.qtd-mais');
@@ -1561,9 +1591,9 @@
     function itemHtml(item) {
       let hist = '';
       if (usoReal && purchaseHistory) {
-        var key = item.texto.toLowerCase().trim();
+        const key = item.texto.toLowerCase().trim();
         if (purchaseHistory[key]) {
-          var dias = Math.floor((Date.now() - purchaseHistory[key]) / 86400000);
+          const dias = Math.floor((Date.now() - purchaseHistory[key]) / 86400000);
           if (dias === 0) hist = ' <span class="hist">· hoje</span>';
           else if (dias === 1) hist = ' <span class="hist">· ontem</span>';
           else hist = ' <span class="hist">· ' + dias + ' dias</span>';
@@ -1571,7 +1601,7 @@
       }
       return `<tr class="item${item.feito ? ' feito' : ''}" data-id="${item.id}">
     <td class="col-check">
-      <div class="cb-excel">
+      <div class="cb-excel" tabindex="0" role="checkbox" aria-checked="${item.feito}">
         <svg viewBox="0 0 24 24"><polyline points="4,13 9,18 20,6"/></svg>
       </div>
     </td>
@@ -1605,15 +1635,15 @@
     }
 
     function remover(id) {
-      var idx = -1;
-      for (var i = 0; i < itens.length; i++) {
+      let idx = -1;
+      for (let i = 0; i < itens.length; i++) {
         if (itens[i].id === id) { idx = i; break; }
       }
       if (idx === -1) return;
-      var item = itens[idx];
+      const item = itens[idx];
       confirmarAcao('Remover "' + item.texto + '"?').then(function (ok) {
         if (!ok) return;
-        var removido = itens.splice(idx, 1)[0];
+        const removido = itens.splice(idx, 1)[0];
         render();
         salvarCache();
         sync();
@@ -1622,16 +1652,16 @@
     }
 
     function limparComprados() {
-      var comprados = [];
-      for (var i = itens.length - 1; i >= 0; i--) {
+      const comprados = [];
+      for (let i = itens.length - 1; i >= 0; i--) {
         if (itens[i].feito) comprados.push(itens[i]);
       }
       if (comprados.length === 0) return;
-      var msg = comprados.length === 1 ? 'Remover 1 item marcado?' : 'Remover ' + comprados.length + ' itens marcados?';
+      const msg = comprados.length === 1 ? 'Remover 1 item marcado?' : 'Remover ' + comprados.length + ' itens marcados?';
       confirmarAcao(msg).then(function (ok) {
         if (!ok) return;
-        var removidos = [];
-        for (var i = itens.length - 1; i >= 0; i--) {
+        const removidos = [];
+        for (let i = itens.length - 1; i >= 0; i--) {
           if (itens[i].feito) {
             removidos.push({ item: itens[i], indiceOriginal: i });
             itens.splice(i, 1);
@@ -1640,7 +1670,7 @@
         render();
         salvarCache();
         sync();
-        var msg2 = removidos.length === 1 ? '1 item removido' : removidos.length + ' itens removidos';
+        const msg2 = removidos.length === 1 ? '1 item removido' : removidos.length + ' itens removidos';
         mostrarToastUndo(msg2, removidos);
       });
     }
@@ -1648,7 +1678,7 @@
     function mudarQtd(id, delta) {
       const item = itens.find(i => i.id === id);
       if (!item) return;
-      item.qtd = Math.max(1, Math.min(99, item.qtd + delta));
+      item.qtd = Math.max(QTD_MIN, Math.min(QTD_MAX, item.qtd + delta));
       render();
       salvarCache();
       sync();
@@ -1668,8 +1698,8 @@
       input.pattern = '[0-9]*';
       input.className = 'qtd-val-edit';
       input.value = item.qtd;
-      input.min = 1;
-      input.max = 99;
+      input.min = QTD_MIN;
+      input.max = QTD_MAX;
       input.style.fontSize = '16px';
       span.textContent = '';
       span.appendChild(input);
@@ -1681,7 +1711,7 @@
         jaFinalizado = true;
         editandoQtdId = null;
         const val = parseInt(input.value, 10);
-        if (!isNaN(val) && val >= 1 && val <= 99) item.qtd = val;
+        if (!isNaN(val) && val >= QTD_MIN && val <= QTD_MAX) item.qtd = val;
         render();
         salvarCache();
         sync();
@@ -1794,20 +1824,20 @@
       document.getElementById('qtd-valor').value = qtdAtual;
     }
     document.getElementById('qtd-menos').addEventListener('click', () => {
-      qtdAtual = Math.max(1, qtdAtual - 1);
+      qtdAtual = Math.max(QTD_MIN, qtdAtual - 1);
       atualizarQtdInput();
     });
     document.getElementById('qtd-mais').addEventListener('click', () => {
-      qtdAtual = Math.min(99, qtdAtual + 1);
+      qtdAtual = Math.min(QTD_MAX, qtdAtual + 1);
       atualizarQtdInput();
     });
     document.getElementById('qtd-valor').addEventListener('input', () => {
       const val = parseInt(document.getElementById('qtd-valor').value, 10);
-      if (!isNaN(val) && val >= 1 && val <= 99) qtdAtual = val;
+      if (!isNaN(val) && val >= QTD_MIN && val <= QTD_MAX) qtdAtual = val;
     });
     document.getElementById('qtd-valor').addEventListener('blur', () => {
       const el = document.getElementById('qtd-valor');
-      if (!el.value || parseInt(el.value, 10) < 1) {
+      if (!el.value || parseInt(el.value, 10) < QTD_MIN) {
         qtdAtual = 1;
         atualizarQtdInput();
       }
@@ -1900,10 +1930,11 @@
 
     const searchInput = document.getElementById('input-search');
     const searchClear = document.getElementById('search-clear');
+    const searchRender = debounce(() => render(), 180);
     searchInput.addEventListener('input', function () {
       searchQuery = this.value;
       searchClear.hidden = !searchQuery;
-      render();
+      searchRender();
     });
     searchClear.addEventListener('click', function () {
       searchQuery = '';
@@ -1919,13 +1950,13 @@
     render();
     buscarRemoto(true);
     buscarHistoricoRemoto();
-    pollTimer = setInterval(() => buscarRemoto(false), 8000);
+    pollTimer = setInterval(() => buscarRemoto(false), POLL_INTERVAL_MS);
     document.addEventListener('visibilitychange', () => {
       if (document.visibilityState === 'visible') {
         buscarRemoto(false);
         buscarHistoricoRemoto();
         if (pollTimer) clearInterval(pollTimer);
-        pollTimer = setInterval(() => buscarRemoto(false), 8000);
+        pollTimer = setInterval(() => buscarRemoto(false), POLL_INTERVAL_MS);
       } else {
         clearInterval(pollTimer);
         pollTimer = null;
