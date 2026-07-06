@@ -508,29 +508,6 @@
     .qtd-inline button:active {
       background: var(--accent-light);
     }
-    .qtd-val-edit {
-      font-family: var(--font-mono);
-      font-size: 0.82rem;
-      width: 32px;
-      text-align: center;
-      color: var(--ink);
-      border: 1px solid var(--border);
-      border-radius: 2px;
-      background: var(--surface);
-      outline: none;
-      padding: 0;
-      -moz-appearance: textfield;
-      appearance: textfield;
-    }
-    .qtd-val-edit:focus {
-      border-color: var(--accent);
-    }
-    .qtd-val-edit::-webkit-inner-spin-button,
-    .qtd-val-edit::-webkit-outer-spin-button {
-      -webkit-appearance: none;
-      margin: 0;
-    }
-
     .qtd-inline .qtd-val {
       min-width: 24px;
       text-align: center;
@@ -579,12 +556,12 @@
     }
 
     .del-cell {
-      width: 26px;
-      height: 26px;
+      width: 22px;
+      height: 22px;
       border: none;
       background: transparent;
       color: var(--ink-soft);
-      font-size: 0.9rem;
+      font-size: 0.75rem;
       cursor: pointer;
       border-radius: var(--radius);
       display: inline-flex;
@@ -596,6 +573,37 @@
     .del-cell:hover {
       background: var(--red-light);
       color: var(--red);
+    }
+
+    .edit-cell {
+      width: 22px;
+      height: 22px;
+      border: none;
+      background: transparent;
+      color: var(--ink-soft);
+      font-size: 0.7rem;
+      cursor: pointer;
+      border-radius: var(--radius);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.1s;
+    }
+
+    .edit-cell:hover {
+      background: var(--accent-light);
+      color: var(--accent);
+    }
+
+    .col-acao-actions {
+      display: inline-flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 3px;
+    }
+
+    .sheet-table td.col-acao {
+      padding: 4px 2px;
     }
 
 
@@ -773,8 +781,7 @@
       }
 
       .toolbar input[type="text"],
-      .qtd-group .qtd-input,
-      .qtd-val-edit { font-size: 16px; }
+      .qtd-group .qtd-input { font-size: 16px; }
     }
 
     @media (min-width:768px) {
@@ -956,7 +963,7 @@
       .toolbar,
       .actions-bar,
       .banner,
-      .del-cell,
+      .del-cell, .edit-cell,
       .cb-excel,
       .clear-row,
       .section-head,
@@ -1124,6 +1131,45 @@
       background: #a50e0e;
     }
 
+    /* Edit modal fields */
+    .edit-field {
+      margin-bottom: 14px;
+      text-align: left;
+    }
+    .edit-field label {
+      display: block;
+      font-size: 0.75rem;
+      color: var(--ink-muted);
+      margin-bottom: 4px;
+      font-weight: 500;
+    }
+    .edit-field input {
+      width: 100%;
+      padding: 8px 10px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      font-family: var(--font);
+      font-size: 0.9rem;
+      color: var(--ink);
+      background: var(--surface);
+      outline: none;
+      box-sizing: border-box;
+      transition: border-color 0.15s;
+    }
+    .edit-field input:focus {
+      border-color: var(--accent);
+    }
+    .edit-qtd-field input {
+      width: 80px;
+      -moz-appearance: textfield;
+      appearance: textfield;
+    }
+    .edit-qtd-field input::-webkit-inner-spin-button,
+    .edit-qtd-field input::-webkit-outer-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+
     /* Toast */
     .toast {
       position: fixed;
@@ -1243,6 +1289,23 @@
     </div>
   </div>
 
+  <div class="modal-overlay" id="modal-editar">
+    <div class="modal-box" style="text-align:left">
+      <div class="edit-field">
+        <label for="edit-nome">Nome do item</label>
+        <input type="text" id="edit-nome" maxlength="80" autocomplete="off">
+      </div>
+      <div class="edit-field edit-qtd-field">
+        <label for="edit-qtd">Quantidade</label>
+        <input type="number" id="edit-qtd" min="1" max="99" inputmode="numeric">
+      </div>
+      <div class="modal-actions" style="margin-top:20px">
+        <button class="modal-btn" id="edit-cancel">Cancelar</button>
+        <button class="modal-btn" id="edit-save" style="background:var(--accent);border-color:var(--accent);color:#fff">Salvar</button>
+      </div>
+    </div>
+  </div>
+
   <div class="toast" id="toast">
     <span id="toast-msg"></span>
     <button class="toast-btn" id="toast-btn">Desfazer</button>
@@ -1267,7 +1330,6 @@
     let toastTimer = null;
     let undoData = null;
     let searchQuery = '';
-    let editandoQtdId = null;
     let pollTimer = null;
     const HISTORY_KEY = 'lista-purchase-history-v1';
     let purchaseHistory = {};
@@ -1573,12 +1635,11 @@
             }
           });
           tr.querySelector('.del-cell').addEventListener('click', () => remover(id));
+          tr.querySelector('.edit-cell').addEventListener('click', () => abrirEditarItem(id));
           const qtdMenos = tr.querySelector('.qtd-menos');
           const qtdMais = tr.querySelector('.qtd-mais');
           if (qtdMenos) qtdMenos.addEventListener('click', () => mudarQtd(id, -1));
           if (qtdMais) qtdMais.addEventListener('click', () => mudarQtd(id, 1));
-          const qtdVal = tr.querySelector('.qtd-val');
-          if (qtdVal) qtdVal.addEventListener('click', () => iniciarEdicaoQtd(id));
         });
         const limpar = document.getElementById('btn-limpar');
         if (limpar) limpar.addEventListener('click', limparComprados);
@@ -1611,7 +1672,10 @@
       </span>
     </td>
     <td class="col-acao">
-      <button class="del-cell" aria-label="Remover">✕</button>
+      <span class="col-acao-actions">
+        <button class="del-cell" aria-label="Remover">✕</button>
+        <button class="edit-cell" aria-label="Editar">✏️</button>
+      </span>
     </td>
   </tr>`;
     }
@@ -1681,44 +1745,38 @@
       sync();
     }
 
-    function iniciarEdicaoQtd(id) {
+    let editandoId = null;
+
+    function abrirEditarItem(id) {
       const item = itens.find(i => i.id === id);
       if (!item) return;
-      const tr = document.querySelector(`tr.item[data-id="${id}"]`);
-      if (!tr) return;
-      const span = tr.querySelector('.qtd-val');
-      if (!span || span.querySelector('input')) return;
-      editandoQtdId = id;
-      const input = document.createElement('input');
-      input.type = 'number';
-      input.inputMode = 'numeric';
-      input.pattern = '[0-9]*';
-      input.className = 'qtd-val-edit';
-      input.value = item.qtd;
-      input.min = QTD_MIN;
-      input.max = QTD_MAX;
-      input.style.fontSize = '16px';
-      span.textContent = '';
-      span.appendChild(input);
-      input.focus();
-      input.select();
-      let jaFinalizado = false;
-      function finalizar() {
-        if (jaFinalizado) return;
-        jaFinalizado = true;
-        editandoQtdId = null;
-        const val = parseInt(input.value, 10);
-        if (!isNaN(val) && val >= QTD_MIN && val <= QTD_MAX) item.qtd = val;
-        render();
-        salvarCache();
-        sync();
-      }
-      input.addEventListener('blur', finalizar);
-      input.addEventListener('change', finalizar);
-      input.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') { e.preventDefault(); input.blur(); }
-        if (e.key === 'Escape') { editandoQtdId = null; render(); }
-      });
+      editandoId = id;
+      document.getElementById('edit-nome').value = item.texto;
+      document.getElementById('edit-qtd').value = item.qtd;
+      document.getElementById('modal-editar').classList.add('show');
+      document.getElementById('edit-nome').focus();
+      document.getElementById('edit-nome').select();
+    }
+
+    function salvarEdicaoItem() {
+      const nome = document.getElementById('edit-nome').value.trim();
+      const qtd = parseInt(document.getElementById('edit-qtd').value, 10);
+      if (!nome) return;
+      if (isNaN(qtd) || qtd < QTD_MIN || qtd > QTD_MAX) return;
+      const item = itens.find(i => i.id === editandoId);
+      if (!item) return;
+      item.texto = nome.charAt(0).toUpperCase() + nome.slice(1);
+      item.qtd = qtd;
+      editandoId = null;
+      document.getElementById('modal-editar').classList.remove('show');
+      render();
+      salvarCache();
+      sync();
+    }
+
+    function cancelarEdicaoItem() {
+      editandoId = null;
+      document.getElementById('modal-editar').classList.remove('show');
     }
 
     function adicionar(texto, qtd) {
@@ -1804,7 +1862,7 @@
         }
         const remoto = await resp.json();
         if (Array.isArray(remoto) && JSON.stringify(remoto) !== JSON.stringify(itens)) {
-          if (!salvando && editandoQtdId === null) {
+          if (!salvando) {
             itens = remoto;
             render();
             salvarCache();
@@ -1868,6 +1926,19 @@
     document.getElementById('modal').addEventListener('click', function (e) {
       if (e.target === this) modalCancelar();
     });
+
+    document.getElementById('edit-cancel').addEventListener('click', cancelarEdicaoItem);
+    document.getElementById('edit-save').addEventListener('click', salvarEdicaoItem);
+    document.getElementById('modal-editar').addEventListener('click', function (e) {
+      if (e.target === this) cancelarEdicaoItem();
+    });
+    document.getElementById('edit-nome').addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') { e.preventDefault(); document.getElementById('edit-qtd').focus(); }
+    });
+    document.getElementById('edit-qtd').addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') { e.preventDefault(); salvarEdicaoItem(); }
+    });
+
     document.getElementById('toast-btn').addEventListener('click', desfazerUndo);
 
     if ('serviceWorker' in navigator) {
