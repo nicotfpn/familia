@@ -781,7 +781,9 @@
       }
 
       .toolbar input[type="text"],
-      .qtd-group .qtd-input { font-size: 16px; }
+      .qtd-group .qtd-input,
+      .search-bar input,
+      .edit-field input { font-size: 16px; }
     }
 
     @media (min-width:768px) {
@@ -1470,7 +1472,13 @@
       const texto = gerarTexto();
       const url = 'https://wa.me/?text=' + encodeURIComponent(texto);
       if (/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
-        location.href = url;
+        var waTimer = setTimeout(function () {
+          if (!document.hidden) location.href = url;
+        }, 800);
+        document.addEventListener('visibilitychange', function waVis() {
+          if (document.hidden) { clearTimeout(waTimer); document.removeEventListener('visibilitychange', waVis); }
+        });
+        location.href = 'whatsapp://send?text=' + encodeURIComponent(texto);
       } else {
         window.open(url, '_blank', 'noopener');
       }
