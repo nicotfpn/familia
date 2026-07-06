@@ -488,29 +488,50 @@
     }
 
     .qtd-inline button {
-      width: 20px;
-      height: 20px;
+      width: 24px;
+      height: 24px;
       border: 1px solid var(--border-light);
       border-radius: 2px;
       background: var(--surface);
       color: var(--accent);
-      font-size: 0.7rem;
+      font-size: 0.75rem;
       font-weight: 600;
       cursor: pointer;
-      display: none;
+      display: inline-flex;
       align-items: center;
       justify-content: center;
       padding: 0;
       font-family: var(--font);
       line-height: 1;
     }
-
     .qtd-inline button:active {
       background: var(--accent-light);
     }
+    .qtd-val-edit {
+      font-family: var(--font-mono);
+      font-size: 0.82rem;
+      width: 32px;
+      text-align: center;
+      color: var(--ink);
+      border: 1px solid var(--border);
+      border-radius: 2px;
+      background: var(--surface);
+      outline: none;
+      padding: 0;
+      -moz-appearance: textfield;
+      appearance: textfield;
+    }
+    .qtd-val-edit:focus {
+      border-color: var(--accent);
+    }
+    .qtd-val-edit::-webkit-inner-spin-button,
+    .qtd-val-edit::-webkit-outer-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
 
     .qtd-inline .qtd-val {
-      min-width: 20px;
+      min-width: 24px;
       text-align: center;
       font-family: var(--font-mono);
       font-size: 0.82rem;
@@ -912,9 +933,6 @@
         font-size: 15px;
       }
 
-      .qtd-inline button {
-        display: inline-flex;
-      }
     }
 
 
@@ -1258,11 +1276,13 @@
     let toastTimer = null;
     let undoData = null;
     let searchQuery = '';
+    let pollTimer = null;
     const HISTORY_KEY = 'lista-purchase-history-v1';
     let purchaseHistory = {};
     const MILESTONE_KEY = 'lista-uso-real-v1';
     let usoReal = false;
     const API_HIST = '/api/historico';
+    const APP_TOKEN = 'substitua-pelo-mesmo-valor-da-env-var-APP_TOKEN-na-vercel';
 
     const sheet = document.getElementById('sheet');
     const contador = document.getElementById('contador');
@@ -1275,6 +1295,12 @@
       return str.replace(/[&<>"']/g, function (c) {
         return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": "&#39;" }[c];
       });
+    }
+
+    function fetchWithTimeout(url, options = {}, timeout = 8000) {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), timeout);
+      return fetch(url, { ...options, signal: controller.signal }).finally(() => clearTimeout(timer));
     }
 
     function mostrarBanner(msg) {
@@ -1576,6 +1602,8 @@
           const qtdMais = tr.querySelector('.qtd-mais');
           if (qtdMenos) qtdMenos.addEventListener('click', () => mudarQtd(id, -1));
           if (qtdMais) qtdMais.addEventListener('click', () => mudarQtd(id, 1));
+          const qtdVal = tr.querySelector('.qtd-val');
+          if (qtdVal) qtdVal.addEventListener('click', () => iniciarEdicaoQtd(id));
         });
         const limpar = document.getElementById('btn-limpar');
         if (limpar) limpar.addEventListener('click', limparComprados);
@@ -1679,6 +1707,37 @@
       sync();
     }
 
+    function iniciarEdicaoQtd(id) {
+      const item = itens.find(i => i.id === id);
+      if (!item) return;
+      const tr = document.querySelector(`tr.item[data-id="${id}"]`);
+      if (!tr) return;
+      const span = tr.querySelector('.qtd-val');
+      if (!span || span.querySelector('input')) return;
+      const input = document.createElement('input');
+      input.type = 'number';
+      input.className = 'qtd-val-edit';
+      input.value = item.qtd;
+      input.min = 1;
+      input.max = 99;
+      span.textContent = '';
+      span.appendChild(input);
+      input.focus();
+      input.select();
+      function finalizar() {
+        const val = parseInt(input.value, 10);
+        if (!isNaN(val) && val >= 1 && val <= 99) item.qtd = val;
+        render();
+        salvarCache();
+        sync();
+      }
+      input.addEventListener('blur', finalizar);
+      input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') { e.preventDefault(); input.blur(); }
+        if (e.key === 'Escape') render();
+      });
+    }
+
     function adicionar(texto, qtd) {
       const t = texto.trim();
       itens.push({
@@ -1699,9 +1758,9 @@
       salvando = true;
       setStatus('saving');
       try {
-        const resp = await fetch(API, {
+        const resp = await fetchWithTimeout(API, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json', 'x-app-token': APP_TOKEN },
           body: JSON.stringify({ itens })
         });
         if (!resp.ok) {
@@ -1721,18 +1780,23 @@
 
     async function syncHistorico() {
       try {
-        await fetch(API_HIST, {
+        const resp = await fetchWithTimeout(API_HIST, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json', 'x-app-token': APP_TOKEN },
           body: JSON.stringify({ historico: purchaseHistory })
         });
-      } catch (e) { }
+        if (!resp.ok) setStatus('erro');
+      } catch (e) {
+        setStatus('erro');
+      }
     }
 
     async function buscarHistoricoRemoto() {
       try {
-        const resp = await fetch(API_HIST);
-        if (!resp.ok) return;
+        const resp = await fetchWithTimeout(API_HIST, {
+          headers: { 'x-app-token': APP_TOKEN }
+        });
+        if (!resp.ok) { setStatus('erro'); return; }
         const remoto = await resp.json();
         if (remoto && typeof remoto === 'object') {
           let mudou = false;
@@ -1744,15 +1808,20 @@
           }
           if (mudou) { salvarHistory(); render(); }
         }
-      } catch (e) { }
+      } catch (e) {
+        setStatus('erro');
+      }
     }
 
     async function buscarRemoto(inicial) {
       try {
-        const resp = await fetch(API);
+        const resp = await fetchWithTimeout(API, {
+          headers: { 'x-app-token': APP_TOKEN }
+        });
         if (!resp.ok) {
           const data = await resp.json().catch(() => ({}));
           if (data.error && inicial) mostrarBanner(data.error);
+          setStatus('erro');
           return;
         }
         const remoto = await resp.json();
@@ -1764,7 +1833,9 @@
           }
         }
         setStatus('ok');
-      } catch (e) { }
+      } catch (e) {
+        setStatus('erro');
+      }
     }
 
 
@@ -1897,9 +1968,17 @@
     render();
     buscarRemoto(true);
     buscarHistoricoRemoto();
-    setInterval(() => buscarRemoto(false), 4000);
+    pollTimer = setInterval(() => buscarRemoto(false), 8000);
     document.addEventListener('visibilitychange', () => {
-      if (document.visibilityState === 'visible') { buscarRemoto(false); buscarHistoricoRemoto(); }
+      if (document.visibilityState === 'visible') {
+        buscarRemoto(false);
+        buscarHistoricoRemoto();
+        if (pollTimer) clearInterval(pollTimer);
+        pollTimer = setInterval(() => buscarRemoto(false), 8000);
+      } else {
+        clearInterval(pollTimer);
+        pollTimer = null;
+      }
     });
 
   </script>

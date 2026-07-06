@@ -1,42 +1,20 @@
+const { getKV, setKV, checkAuth, setCORSHeaders } = require('./_kv');
+
 module.exports = async (req, res) => {
-  const url = process.env.KV_REST_API_URL;
-  const token = process.env.KV_REST_API_TOKEN;
   const KEY = 'historico-compras';
 
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  setCORSHeaders(res);
 
   if (req.method === 'OPTIONS') {
     return res.status(200).end();
   }
 
-  if (!url || !token) {
-    return res.status(500).json({
-      error: 'KV não configurado. Crie um Vercel KV Store e conecte ao projeto (as env vars KV_REST_API_URL e KV_REST_API_TOKEN precisam existir).'
-    });
-  }
-
-  const headers = { Authorization: `Bearer ${token}` };
-
-  async function getHistorico() {
-    const resp = await fetch(`${url}/get/${KEY}`, { headers });
-    const data = await resp.json();
-    return data.result ? JSON.parse(data.result) : {};
-  }
-
-  async function setHistorico(obj) {
-    await fetch(`${url}/set/${KEY}`, {
-      method: 'POST',
-      headers: { ...headers, 'Content-Type': 'text/plain' },
-      body: JSON.stringify(obj)
-    });
-  }
+  if (!checkAuth(req, res)) return;
 
   try {
     if (req.method === 'GET') {
-      const historico = await getHistorico();
-      return res.status(200).json(historico);
+      const historico = await getKV(KEY);
+      return res.status(200).json(historico || {});
     }
 
     if (req.method === 'POST') {
@@ -44,7 +22,7 @@ module.exports = async (req, res) => {
       if (typeof historico !== 'object' || Array.isArray(historico)) {
         return res.status(400).json({ error: 'historico deve ser um objeto' });
       }
-      await setHistorico(historico);
+      await setKV(KEY, historico);
       return res.status(200).json({ ok: true });
     }
 
