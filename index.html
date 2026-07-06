@@ -474,6 +474,10 @@
       font-family: var(--font-mono);
       font-size: 0.82rem;
       color: var(--ink);
+      min-height: 32px;
+      padding: 4px 2px;
+      display: inline-flex;
+      align-items: center;
     }
 
     .item.feito .qtd-val {
@@ -772,7 +776,8 @@
       }
 
       .toolbar input[type="text"],
-      .qtd-group .qtd-input { font-size: 16px; }
+      .qtd-group .qtd-input,
+      .qtd-val-edit { font-size: 16px; }
     }
 
     @media (min-width:768px) {
@@ -1160,32 +1165,6 @@
       background: rgba(255,255,255,0.12);
     }
 
-    /* Pin button */
-    .pin-cell {
-      width: 26px;
-      height: 26px;
-      border: none;
-      background: transparent;
-      font-size: 0.8rem;
-      cursor: pointer;
-      border-radius: var(--radius);
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      transition: all 0.1s;
-      padding: 0;
-      line-height: 1;
-      opacity: 0.35;
-      vertical-align: middle;
-    }
-    .pin-cell.ativo {
-      opacity: 1;
-    }
-    .pin-cell:hover {
-      background: var(--accent-light);
-      opacity: 1;
-    }
-
     @media (max-width:500px) {
       .toast {
         font-size: 0.8rem;
@@ -1276,6 +1255,7 @@
     let toastTimer = null;
     let undoData = null;
     let searchQuery = '';
+    let editandoQtdId = null;
     let pollTimer = null;
     const HISTORY_KEY = 'lista-purchase-history-v1';
     let purchaseHistory = {};
@@ -1467,25 +1447,7 @@
       }
     }
 
-    function togglePin(id) {
-      try {
-        for (var i = 0; i < itens.length; i++) {
-          if (itens[i].id === id) {
-            itens[i].fixado = !itens[i].fixado;
-            render();
-            salvarCache();
-            sync();
-            return;
-          }
-        }
-      } catch (e) { }
-    }
-
     function render() {
-      for (var i = 0; i < itens.length; i++) {
-        if (itens[i].fixado == null) itens[i].fixado = false;
-      }
-
       if (!usoReal && itens.length >= 15) {
         usoReal = true;
         try { localStorage.setItem(MILESTONE_KEY, '1'); } catch (e) { }
@@ -1512,15 +1474,12 @@
         return sortDir === 'asc' ? diff : -diff;
       };
 
-      const fixados = [];
       const pendentes = [];
       const comprados = [];
       for (var i = 0; i < exibir.length; i++) {
         const item = exibir[i];
         if (item.feito) {
           comprados.push(item);
-        } else if (item.fixado) {
-          fixados.push(item);
         } else {
           pendentes.push(item);
         }
@@ -1529,14 +1488,11 @@
       comprados.sort(cmp);
 
       const allPendentes = [];
-      const allFixados = [];
       const allComprados = [];
       for (var i = 0; i < itens.length; i++) {
         const item = itens[i];
         if (item.feito) {
           allComprados.push(item);
-        } else if (item.fixado) {
-          allFixados.push(item);
         } else {
           allPendentes.push(item);
         }
@@ -1549,7 +1505,7 @@
       } else if (itens.length === 0) {
         contador.textContent = 'nenhum item';
       } else {
-        contador.textContent = `${allPendentes.length + allFixados.length} pra comprar · ${allComprados.length} no carrinho`;
+        contador.textContent = `${allPendentes.length} pra comprar · ${allComprados.length} no carrinho`;
       }
 
       if (itens.length === 0) {
@@ -1568,11 +1524,6 @@
         `<th class="col-qtd sortable${sortBy === 'qtd' ? ' sorted' : ''}" data-sort="qtd">Qtd<span class="sort-arrow">${sortArrow('qtd')}</span></th>` +
         '<th class="col-acao"></th>' +
         '</tr></thead><tbody>';
-
-      if (fixados.length) {
-        html += '<tr class="section-head"><td colspan="4">📌 Fixados</td></tr>';
-        html += fixados.map(itemHtml).join('');
-      }
 
       if (pendentes.length) {
         html += pendentes.map(itemHtml).join('');
@@ -1595,8 +1546,6 @@
           const id = tr.dataset.id;
           tr.querySelector('.cb-excel').addEventListener('click', () => toggle(id));
           tr.querySelector('.del-cell').addEventListener('click', () => remover(id));
-          const pinCell = tr.querySelector('.pin-cell');
-          if (pinCell) pinCell.addEventListener('click', () => togglePin(id));
           const qtdMenos = tr.querySelector('.qtd-menos');
           const qtdMais = tr.querySelector('.qtd-mais');
           if (qtdMenos) qtdMenos.addEventListener('click', () => mudarQtd(id, -1));
@@ -1635,7 +1584,6 @@
       </span>
     </td>
     <td class="col-acao">
-      <button class="pin-cell${item.fixado ? ' ativo' : ''}" aria-label="Fixar">📌</button>
       <button class="del-cell" aria-label="Remover">✕</button>
     </td>
   </tr>`;
@@ -1713,17 +1661,25 @@
       if (!tr) return;
       const span = tr.querySelector('.qtd-val');
       if (!span || span.querySelector('input')) return;
+      editandoQtdId = id;
       const input = document.createElement('input');
       input.type = 'number';
+      input.inputMode = 'numeric';
+      input.pattern = '[0-9]*';
       input.className = 'qtd-val-edit';
       input.value = item.qtd;
       input.min = 1;
       input.max = 99;
+      input.style.fontSize = '16px';
       span.textContent = '';
       span.appendChild(input);
       input.focus();
       input.select();
+      let jaFinalizado = false;
       function finalizar() {
+        if (jaFinalizado) return;
+        jaFinalizado = true;
+        editandoQtdId = null;
         const val = parseInt(input.value, 10);
         if (!isNaN(val) && val >= 1 && val <= 99) item.qtd = val;
         render();
@@ -1731,9 +1687,10 @@
         sync();
       }
       input.addEventListener('blur', finalizar);
+      input.addEventListener('change', finalizar);
       input.addEventListener('keydown', (e) => {
         if (e.key === 'Enter') { e.preventDefault(); input.blur(); }
-        if (e.key === 'Escape') render();
+        if (e.key === 'Escape') { editandoQtdId = null; render(); }
       });
     }
 
@@ -1744,7 +1701,6 @@
         texto: t.charAt(0).toUpperCase() + t.slice(1),
         qtd,
         feito: false,
-        fixado: false,
         criadoEm: Date.now()
       });
       render();
@@ -1821,7 +1777,7 @@
         }
         const remoto = await resp.json();
         if (Array.isArray(remoto) && JSON.stringify(remoto) !== JSON.stringify(itens)) {
-          if (!salvando) {
+          if (!salvando && editandoQtdId === null) {
             itens = remoto;
             render();
             salvarCache();
