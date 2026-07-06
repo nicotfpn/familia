@@ -1,4 +1,6 @@
-const CACHE = 'lista-compras-v1';
+// Incremente manualmente a cada deploy com mudança visível no HTML/CSS
+// para forçar invalidação do cache antigo nos usuários.
+const CACHE = 'lista-compras-v2';
 const SHELL = ['/', '/manifest.json', '/icon-192.png', '/icon-512.png'];
 
 self.addEventListener('install', (e) => {
