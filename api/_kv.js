@@ -24,15 +24,6 @@ module.exports = {
     });
   },
 
-  checkAuth(req, res) {
-    const appToken = req.headers['x-app-token'];
-    if (process.env.APP_TOKEN && process.env.APP_TOKEN !== appToken) {
-      res.status(401).json({ error: 'não autorizado' });
-      return false;
-    }
-    return true;
-  },
-
   setCORSHeaders(res) {
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');

@@ -1282,7 +1282,6 @@
     const MILESTONE_KEY = 'lista-uso-real-v1';
     let usoReal = false;
     const API_HIST = '/api/historico';
-    const APP_TOKEN = '4bda8d7eebb83888779abfc74c2a61cbef008a9c11813565';
 
     const sheet = document.getElementById('sheet');
     const contador = document.getElementById('contador');
@@ -1760,7 +1759,7 @@
       try {
         const resp = await fetchWithTimeout(API, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'x-app-token': APP_TOKEN },
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ itens })
         });
         if (!resp.ok) {
@@ -1782,7 +1781,7 @@
       try {
         const resp = await fetchWithTimeout(API_HIST, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'x-app-token': APP_TOKEN },
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ historico: purchaseHistory })
         });
         if (!resp.ok) setStatus('erro');
@@ -1793,9 +1792,7 @@
 
     async function buscarHistoricoRemoto() {
       try {
-        const resp = await fetchWithTimeout(API_HIST, {
-          headers: { 'x-app-token': APP_TOKEN }
-        });
+        const resp = await fetchWithTimeout(API_HIST);
         if (!resp.ok) { setStatus('erro'); return; }
         const remoto = await resp.json();
         if (remoto && typeof remoto === 'object') {
@@ -1815,9 +1812,7 @@
 
     async function buscarRemoto(inicial) {
       try {
-        const resp = await fetchWithTimeout(API, {
-          headers: { 'x-app-token': APP_TOKEN }
-        });
+        const resp = await fetchWithTimeout(API);
         if (!resp.ok) {
           const data = await resp.json().catch(() => ({}));
           if (data.error && inicial) mostrarBanner(data.error);

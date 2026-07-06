@@ -1,4 +1,4 @@
-const { getKV, setKV, checkAuth, setCORSHeaders } = require('./_kv');
+const { getKV, setKV, setCORSHeaders } = require('./_kv');
 
 module.exports = async (req, res) => {
   const KEY = 'lista-compras';
@@ -8,8 +8,6 @@ module.exports = async (req, res) => {
   if (req.method === 'OPTIONS') {
     return res.status(200).end();
   }
-
-  if (!checkAuth(req, res)) return;
 
   try {
     if (req.method === 'GET') {
